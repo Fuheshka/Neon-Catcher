@@ -1,6 +1,8 @@
 extends Area2D
 class_name Player
 
+const SCREEN_WIDTH: float = 540.0
+
 """Maximum horizontal speed (pixels/sec)."""
 @export var speed: float = 550.0
 
@@ -15,6 +17,12 @@ class_name Player
 
 """Horizontal padding to keep the paddle on-screen."""
 @export var screen_padding: float = 64.0
+
+"""Mobile follow responsiveness; higher values feel snappier."""
+@export var sensitivity: float = 0.2
+
+"""Small movement ignored to avoid jitter on high-DPI screens."""
+@export var touch_deadzone: float = 8.0
 
 """Number of points retained in the neon trail."""
 @export var trail_point_limit: int = 22
@@ -34,15 +42,16 @@ class_name Player
 """How quickly the trail erodes when idle (points per second)."""
 @export var trail_decay_rate: float = 18.0
 
+var target_x: float = 0.0
+var is_touching: bool = false
 var _enabled: bool = true
 var _velocity_x: float = 0.0
-var _tilt_tween: Tween
-var _squash_tween: Tween
+var _keyboard_velocity_x: float = 0.0
+var _tilt_tween: Tween = null
+var _squash_tween: Tween = null
 var _last_move_sign: int = 0
 var _base_scale: Vector2
-var _pointer_active: bool = false
-var _pointer_position_x: float = 0.0
-var _pointer_dead_zone: float = 8.0
+var _base_modulate: Color
 @onready var _events: Node = get_node("/root/Events")
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _trail_line: Line2D = $TrailLine
@@ -58,6 +67,8 @@ func _ready() -> void:
 	# Use area_entered to detect collisions with falling objects.
 	area_entered.connect(_on_area_entered)
 	_base_scale = _sprite.scale
+	_base_modulate = _sprite.modulate
+	target_x = _clamp_target_x(global_position.x)
 	_setup_trail_line()
 
 
@@ -65,28 +76,22 @@ func _physics_process(delta: float) -> void:
 	if not _enabled:
 		return
 
-	var viewport_width: float = get_viewport_rect().size.x
+	var previous_x: float = global_position.x
+	var follow_t: float = clampf(sensitivity * 60.0 * delta, 0.0, 1.0)
+	global_position.x = lerp(global_position.x, target_x, follow_t)
+
 	var axis: float = Input.get_axis("move_left", "move_right")
-	if _pointer_active:
-		var dx: float = _pointer_position_x - global_position.x
-		if abs(dx) > _pointer_dead_zone:
-			var normalized: float = dx / max(1.0, viewport_width * 0.35)
-			axis = clamp(normalized, -1.0, 1.0)
-		else:
-			axis = 0.0
-	var target_speed: float = axis * speed
 	var accel: float = acceleration if abs(axis) > 0.01 else friction
-	_velocity_x = move_toward(_velocity_x, target_speed, accel * delta)
-	global_position.x += _velocity_x * delta
+	_keyboard_velocity_x = move_toward(_keyboard_velocity_x, axis * speed, accel * delta)
+	global_position.x += _keyboard_velocity_x * delta
+
+	global_position.x = _clamp_target_x(global_position.x)
+	_velocity_x = (global_position.x - previous_x) / max(delta, 0.0001)
 
 	var move_sign: int = int(sign(_velocity_x))
 	if move_sign != 0 and move_sign != _last_move_sign and abs(_velocity_x) > speed * 0.3:
 		_play_squash_stretch(move_sign)
 	_last_move_sign = move_sign
-
-	var margin: float = _get_horizontal_margin()
-	# clamp() keeps X within [min, max] to prevent leaving the visible play area.
-	global_position.x = clamp(global_position.x, margin, viewport_width - margin)
 
 	_update_tilt()
 	_update_trail(delta)
@@ -110,27 +115,48 @@ func _on_area_entered(area: Area2D) -> void:
 func _on_game_over() -> void:
 	_enabled = false
 	_velocity_x = 0.0
-	_pointer_active = false
+	_keyboard_velocity_x = 0.0
+	is_touching = false
 	_reset_tilt()
 	_reset_squash()
+	_update_touch_feedback()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if not _enabled:
 		return
-	if event is InputEventScreenTouch:
+	if event is InputEventScreenDrag:
+		_handle_touch((event as InputEventScreenDrag).position.x, true)
+	elif event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
-		_pointer_active = touch.pressed
-		_pointer_position_x = touch.position.x
-	elif event is InputEventScreenDrag:
-		_pointer_active = true
-		_pointer_position_x = (event as InputEventScreenDrag).position.x
+		_handle_touch(touch.position.x, touch.pressed)
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		var mouse_button := event as InputEventMouseButton
-		_pointer_active = mouse_button.pressed
-		_pointer_position_x = mouse_button.position.x
-	elif event is InputEventMouseMotion and _pointer_active:
-		_pointer_position_x = (event as InputEventMouseMotion).position.x
+		_handle_touch(mouse_button.position.x, mouse_button.pressed)
+	elif event is InputEventMouseMotion and is_touching:
+		_handle_touch((event as InputEventMouseMotion).position.x, true)
+
+
+func _handle_touch(screen_x: float, pressed: bool) -> void:
+	is_touching = pressed
+	_update_touch_feedback()
+	if not pressed:
+		_keyboard_velocity_x = 0.0
+		return
+
+	var clamped_x: float = _clamp_target_x(screen_x)
+	if abs(clamped_x - target_x) < touch_deadzone:
+		return
+	target_x = clamped_x
+
+
+func _update_touch_feedback() -> void:
+	if _sprite == null:
+		return
+	if is_touching:
+		_sprite.modulate = _base_modulate * Color(1.15, 1.15, 1.15, 1.0)
+	else:
+		_sprite.modulate = _base_modulate
 
 
 func _update_tilt() -> void:
@@ -216,3 +242,9 @@ func _get_horizontal_margin() -> float:
 		return screen_padding
 	var sprite_width: float = _sprite.texture.get_size().x * abs(_sprite.global_scale.x)
 	return max(screen_padding, sprite_width * 0.5)
+
+
+func _clamp_target_x(x_position: float) -> float:
+	var margin: float = _get_horizontal_margin()
+	var safe_margin: float = min(margin, SCREEN_WIDTH * 0.5)
+	return clamp(x_position, safe_margin, SCREEN_WIDTH - safe_margin)
