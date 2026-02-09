@@ -5,23 +5,25 @@
 
 [node name="UI" type="CanvasLayer" unique_id=516871522]
 
-[node name="HUD" type="Control" parent="." unique_id=1137653371 node_paths=PackedStringArray("score_label", "health_label")]
+[node name="HUD" type="Control" parent="." unique_id=1137653371 node_paths=PackedStringArray("score_label", "health_label", "high_score_label")]
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 40.0
+offset_bottom = 83.0
 grow_horizontal = 2
 script = ExtResource("1_x4jx1")
 score_label = NodePath("HBoxContainer/ScoreLabel")
 health_label = NodePath("HBoxContainer/HealthLabel")
+high_score_label = NodePath("HBoxContainer/HighScoreLabel")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="HUD" unique_id=1746482810]
 layout_mode = 0
-offset_left = 10.0
+offset_left = 9.0
 offset_top = -2.0
-offset_right = 145.0
+offset_right = 274.5
 offset_bottom = 38.0
 scale = Vector2(2, 2)
+alignment = 1
 
 [node name="ScoreLabel" type="Label" parent="HUD/HBoxContainer" unique_id=665962232]
 layout_mode = 2
@@ -30,6 +32,11 @@ text = "Score: 0"
 [node name="HealthLabel" type="Label" parent="HUD/HBoxContainer" unique_id=744876347]
 layout_mode = 2
 text = "Health: 3"
+
+[node name="HighScoreLabel" type="Label" parent="HUD/HBoxContainer" unique_id=1498120083]
+modulate = Color(0.9921875, 1, 0, 1)
+layout_mode = 2
+text = "Best: 0"
 
 [node name="GameOver" type="Control" parent="." unique_id=1437624638 node_paths=PackedStringArray("restart_button", "quit_button")]
 process_mode = 2

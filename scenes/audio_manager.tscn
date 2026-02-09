@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://dc0ep77pwi1os"]
+
+[ext_resource type="Script" uid="uid://chkdelqinv83f" path="res://scripts/AudioManager.gd" id="1_8qd8g"]
+[ext_resource type="AudioStream" uid="uid://c0nxbb0ytydle" path="res://assets/sounds/score.wav" id="2_m6ggh"]
+[ext_resource type="AudioStream" uid="uid://iupu5dbkfxuh" path="res://assets/sounds/hurt.wav" id="3_aoitu"]
+[ext_resource type="AudioStream" uid="uid://b5y5blcp47upv" path="res://assets/sounds/gameover.wav" id="4_njtn3"]
+
+[node name="AudioManager" type="Node" unique_id=1027923424]
+process_mode = 3
+script = ExtResource("1_8qd8g")
+score_sound = ExtResource("2_m6ggh")
+damage_sound = ExtResource("3_aoitu")
+game_over_sound = ExtResource("4_njtn3")

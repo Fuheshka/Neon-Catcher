@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 Events="*uid://cdv0el87cue11"
+Audio_Manager="*uid://dc0ep77pwi1os"
 
 [display]
 

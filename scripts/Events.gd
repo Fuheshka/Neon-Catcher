@@ -5,6 +5,7 @@ signal request_take_damage(amount: int)
 signal score_updated(new_total: int)
 signal health_updated(new_total: int)
 signal game_over()
+signal high_score_updated(amount: int)
 
 
 func _ready() -> void:
