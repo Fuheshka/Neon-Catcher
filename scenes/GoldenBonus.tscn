@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dmnbyyokivc3g"]
+
+[ext_resource type="PackedScene" uid="uid://ogw72in4cyx5" path="res://scenes/falling_object.tscn" id="1_3rg8t"]
+
+[node name="FallingObject" unique_id=1262759128 instance=ExtResource("1_3rg8t")]
+object_type = "Bonus"
+score_value = 50
+
+[node name="Sprite2D" parent="." index="0" unique_id=2069342748]
+modulate = Color(0.91015625, 1, 0, 1)

@@ -6,6 +6,9 @@
 [ext_resource type="PackedScene" uid="uid://b5c6xdwr88dl7" path="res://scenes/player.tscn" id="3_sugp2"]
 [ext_resource type="PackedScene" uid="uid://d1mbq5cp7x5lw" path="res://scenes/bonus.tscn" id="3_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://mjxp02ou7d88" path="res://scenes/enemy.tscn" id="4_tefeu"]
+[ext_resource type="Script" uid="uid://cb4052vwsyh6h" path="res://scripts/Background.gd" id="5_bg"]
+[ext_resource type="Script" uid="uid://dgk1hndi6u2d8" path="res://scripts/CameraManager.gd" id="6_cam"]
+[ext_resource type="PackedScene" uid="uid://dmnbyyokivc3g" path="res://scenes/GoldenBonus.tscn" id="8_85g3d"]
 
 [node name="Main" type="Node" unique_id=739570215]
 
@@ -16,6 +19,10 @@ script = ExtResource("1_0wfyh")
 
 [node name="World" type="Node2D" parent="." unique_id=2008451902]
 
+[node name="Camera2D" type="Camera2D" parent="World" unique_id=112233445]
+position = Vector2(320, 540)
+script = ExtResource("6_cam")
+
 [node name="Background" type="ColorRect" parent="World" unique_id=863730468]
 anchors_preset = 15
 anchor_right = 1.0
@@ -23,10 +30,13 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.3046875, 0.3046875, 0.3046875, 1)
+script = ExtResource("5_bg")
+start_color = Color(0.3046875, 0.3046875, 0.3046875, 1)
 
 [node name="Spawner" type="Node2D" parent="World" unique_id=646948645]
 script = ExtResource("2_sugp2")
-spawnable_scenes = Array[PackedScene]([ExtResource("3_tbgi4"), ExtResource("4_tefeu")])
+spawnable_scenes = Array[PackedScene]([ExtResource("3_tbgi4"), ExtResource("4_tefeu"), ExtResource("8_85g3d")])
+spawn_weights = [1.0, 1.0, 0.25]
 
 [node name="Player" parent="World" unique_id=1735748119 instance=ExtResource("3_sugp2")]
 position = Vector2(264, 906)
