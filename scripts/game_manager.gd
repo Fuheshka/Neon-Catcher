@@ -59,6 +59,7 @@ func _on_request_take_damage(amount: int) -> void:
 
 func _on_game_over() -> void:
 	Engine.time_scale = 1.0
+	_clear_flash_overlay()
 	save_game()
 
 
@@ -135,6 +136,13 @@ func _flash_damage() -> void:
 	_flash_tween = get_tree().create_tween()
 	_flash_tween.set_ignore_time_scale(true)
 	_flash_tween.tween_property(_flash_rect, "color:a", 0.0, flash_fade_time).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+
+
+func _clear_flash_overlay() -> void:
+	if _flash_tween:
+		_flash_tween.kill()
+	if _flash_rect:
+		_flash_rect.color = Color(1, 1, 1, 0)
 
 
 func _update_difficulty_factor() -> void:
