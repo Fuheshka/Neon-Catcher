@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://ogw72in4cyx5"]
+
+[ext_resource type="Script" uid="uid://dt1gbgvlxsc3t" path="res://scripts/falling_object.gd" id="1_vp4w2"]
+[ext_resource type="Texture2D" uid="uid://brhjuklrsvqyd" path="res://icon.svg" id="2_ue6sm"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_wdmyw"]
+radius = 65.6
+
+[node name="FallingObject" type="Area2D" unique_id=1262759128]
+script = ExtResource("1_vp4w2")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=2069342748]
+texture = ExtResource("2_ue6sm")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=952407293]
+shape = SubResource("CircleShape2D_wdmyw")
+
+[node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="." unique_id=1229458650]

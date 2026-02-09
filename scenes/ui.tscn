@@ -1,0 +1,75 @@
+[gd_scene format=3 uid="uid://q84vpce34yvx"]
+
+[ext_resource type="Script" uid="uid://c6x6j5ax3cxws" path="res://scripts/HUD.gd" id="1_x4jx1"]
+[ext_resource type="Script" uid="uid://cmku4yp7fwhvu" path="res://scripts/GameOverScreen.gd" id="2_yev5y"]
+
+[node name="UI" type="CanvasLayer" unique_id=516871522]
+
+[node name="HUD" type="Control" parent="." unique_id=1137653371 node_paths=PackedStringArray("score_label", "health_label")]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 40.0
+grow_horizontal = 2
+script = ExtResource("1_x4jx1")
+score_label = NodePath("HBoxContainer/ScoreLabel")
+health_label = NodePath("HBoxContainer/HealthLabel")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD" unique_id=1746482810]
+layout_mode = 0
+offset_left = 10.0
+offset_top = -2.0
+offset_right = 145.0
+offset_bottom = 38.0
+scale = Vector2(2, 2)
+
+[node name="ScoreLabel" type="Label" parent="HUD/HBoxContainer" unique_id=665962232]
+layout_mode = 2
+text = "Score: 0"
+
+[node name="HealthLabel" type="Label" parent="HUD/HBoxContainer" unique_id=744876347]
+layout_mode = 2
+text = "Health: 3"
+
+[node name="GameOver" type="Control" parent="." unique_id=1437624638 node_paths=PackedStringArray("restart_button", "quit_button")]
+process_mode = 2
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_yev5y")
+restart_button = NodePath("VBoxContainer/RestartButton")
+quit_button = NodePath("VBoxContainer/QuitButton")
+
+[node name="ColorRect" type="ColorRect" parent="GameOver" unique_id=1768850512]
+layout_mode = 0
+offset_left = -206.0
+offset_top = -14.0
+offset_right = 794.0
+offset_bottom = 986.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.5882353)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GameOver" unique_id=485161659]
+layout_mode = 0
+offset_left = 127.0
+offset_top = 352.0
+offset_right = 277.0
+offset_bottom = 452.0
+scale = Vector2(2, 2)
+
+[node name="GameOverLabel" type="Label" parent="GameOver/VBoxContainer" unique_id=1775208647]
+layout_mode = 2
+text = "Game Over"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="GameOver/VBoxContainer" unique_id=1709066696]
+layout_mode = 2
+text = "Restart"
+
+[node name="QuitButton" type="Button" parent="GameOver/VBoxContainer" unique_id=3834191]
+layout_mode = 2
+text = "Quit"
