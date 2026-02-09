@@ -1,7 +1,11 @@
 [gd_scene format=3 uid="uid://q84vpce34yvx"]
 
 [ext_resource type="Script" uid="uid://c6x6j5ax3cxws" path="res://scripts/HUD.gd" id="1_x4jx1"]
+[ext_resource type="FontFile" uid="uid://7gmdxpbn8lpj" path="res://assets/ofont.ru_Fixedsys.ttf" id="1_yev5y"]
 [ext_resource type="Script" uid="uid://cmku4yp7fwhvu" path="res://scripts/GameOverScreen.gd" id="2_yev5y"]
+
+[sub_resource type="Theme" id="Theme_gdt2y"]
+default_font = ExtResource("1_yev5y")
 
 [node name="UI" type="CanvasLayer" unique_id=516871522]
 
@@ -11,6 +15,7 @@ anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 83.0
 grow_horizontal = 2
+theme = SubResource("Theme_gdt2y")
 script = ExtResource("1_x4jx1")
 score_label = NodePath("HBoxContainer/ScoreLabel")
 health_label = NodePath("HBoxContainer/HealthLabel")

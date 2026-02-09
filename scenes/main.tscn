@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://c56jho8fwbs05"]
 
 [ext_resource type="Script" uid="uid://dem7flbycx27y" path="res://scripts/game_manager.gd" id="1_0wfyh"]
+[ext_resource type="Texture2D" uid="uid://qj8gjyja4bdk" path="res://assets/grid.png" id="1_choun"]
 [ext_resource type="Script" uid="uid://pfrhitkke0bk" path="res://scripts/spawner.gd" id="2_sugp2"]
 [ext_resource type="PackedScene" uid="uid://q84vpce34yvx" path="res://scenes/ui.tscn" id="2_tefeu"]
 [ext_resource type="PackedScene" uid="uid://b5c6xdwr88dl7" path="res://scenes/player.tscn" id="3_sugp2"]
@@ -9,8 +10,34 @@
 [ext_resource type="Script" uid="uid://cb4052vwsyh6h" path="res://scripts/Background.gd" id="5_bg"]
 [ext_resource type="Script" uid="uid://dgk1hndi6u2d8" path="res://scripts/CameraManager.gd" id="6_cam"]
 [ext_resource type="PackedScene" uid="uid://dmnbyyokivc3g" path="res://scenes/GoldenBonus.tscn" id="8_85g3d"]
+[ext_resource type="Script" uid="uid://gridscroll" path="res://scripts/GridScroller.gd" id="9_grid"]
+
+[sub_resource type="Environment" id="Environment_ya4ey"]
+background_mode = 3
+glow_enabled = true
+glow_intensity = 1.0
+glow_bloom = 0.5
+glow_hdr_threshold = 0.09
 
 [node name="Main" type="Node" unique_id=739570215]
+
+[node name="GridBackground" type="ColorRect" parent="." unique_id=1430302803]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.010894775, 0, 0.19921875, 1)
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=717040695]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_choun")
+stretch_mode = 1
+script = ExtResource("9_grid")
 
 [node name="GameManager" type="Node" parent="." unique_id=604061707]
 script = ExtResource("1_0wfyh")
@@ -20,7 +47,7 @@ script = ExtResource("1_0wfyh")
 [node name="World" type="Node2D" parent="." unique_id=2008451902]
 
 [node name="Camera2D" type="Camera2D" parent="World" unique_id=112233445]
-position = Vector2(320, 540)
+position = Vector2(270, 480)
 script = ExtResource("6_cam")
 
 [node name="Background" type="ColorRect" parent="World" unique_id=863730468]
@@ -46,3 +73,6 @@ position = Vector2(20, -50)
 
 [node name="SpawnPosRight" type="Marker2D" parent="World" unique_id=1070438267]
 position = Vector2(520, -50)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=349747797]
+environment = SubResource("Environment_ya4ey")

@@ -3,7 +3,6 @@
 [ext_resource type="PackedScene" uid="uid://ogw72in4cyx5" path="res://scenes/falling_object.tscn" id="1_3no7k"]
 
 [node name="FallingObject" unique_id=1262759128 instance=ExtResource("1_3no7k")]
-object_type = "Bonus"
 
 [node name="Sprite2D" parent="." index="0" unique_id=2069342748]
 modulate = Color(0, 0.19140625, 1, 1)

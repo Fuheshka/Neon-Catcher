@@ -13,26 +13,40 @@ class_name Player
 """Maximum tilt in radians applied while moving."""
 @export var max_tilt_radians: float = 0.15
 
-"""Seconds between spawning trail ghosts when moving."""
-@export var trail_spawn_interval: float = 0.06
-
-"""Minimum speed before ghosts start spawning."""
-@export var trail_min_speed: float = 120.0
-
 """Horizontal padding to keep the paddle on-screen."""
 @export var screen_padding: float = 64.0
 
+"""Number of points retained in the neon trail."""
+@export var trail_point_limit: int = 22
+
+"""Minimum distance between trail points (pixels)."""
+@export var trail_spacing: float = 10.0
+
+"""Minimum horizontal speed before the trail begins."""
+@export var trail_min_speed: float = 80.0
+
+"""Width of the neon trail line."""
+@export var trail_width: float = 8.0
+
+"""Color of the neon trail (HDR for extra glow)."""
+@export var trail_color: Color = Color(0.0, 1.8, 1.5, 0.9)
+
+"""How quickly the trail erodes when idle (points per second)."""
+@export var trail_decay_rate: float = 18.0
+
 var _enabled: bool = true
 var _velocity_x: float = 0.0
-var _trail_timer: float = 0.0
 var _tilt_tween: Tween
 var _squash_tween: Tween
 var _last_move_sign: int = 0
 var _base_scale: Vector2
 @onready var _events: Node = get_node("/root/Events")
 @onready var _sprite: Sprite2D = $Sprite2D
+@onready var _trail_line: Line2D = $TrailLine
 
 @onready var confetti: CPUParticles2D = $Confetti
+
+var _trail_points_world: PackedVector2Array = PackedVector2Array()
 
 
 func _ready() -> void:
@@ -41,6 +55,7 @@ func _ready() -> void:
 	# Use area_entered to detect collisions with falling objects.
 	area_entered.connect(_on_area_entered)
 	_base_scale = _sprite.scale
+	_setup_trail_line()
 
 
 func _physics_process(delta: float) -> void:
@@ -112,34 +127,50 @@ func _reset_squash() -> void:
 
 
 func _update_trail(delta: float) -> void:
+	if _trail_line == null:
+		return
+	if _trail_points_world.is_empty():
+		_trail_points_world.append(global_position)
+
 	if abs(_velocity_x) < trail_min_speed:
-		_trail_timer = 0.0
+		if _trail_points_world.size() > 1:
+			var remove_count: int = clampi(int(ceil(trail_decay_rate * delta)), 1, _trail_points_world.size() - 1)
+			for i in range(remove_count):
+				_trail_points_world.remove_at(0)
+		_update_trail_line_points()
 		return
 
-	_trail_timer -= delta
-	if _trail_timer <= 0.0:
-		_spawn_ghost()
-		_trail_timer = trail_spawn_interval
+	var last_point: Vector2 = _trail_points_world[_trail_points_world.size() - 1]
+	var distance: float = global_position.distance_to(last_point)
+	if distance >= trail_spacing:
+		_trail_points_world.append(global_position)
+	else:
+		_trail_points_world[_trail_points_world.size() - 1] = global_position
+
+	while _trail_points_world.size() > trail_point_limit:
+		_trail_points_world.remove_at(0)
+
+	_update_trail_line_points()
 
 
-func _spawn_ghost() -> void:
-	var ghost: Sprite2D = Sprite2D.new()
-	ghost.texture = _sprite.texture
-	ghost.global_position = _sprite.global_position
-	ghost.global_rotation = _sprite.global_rotation
-	ghost.global_scale = _sprite.global_scale
-	var color: Color = _sprite.modulate
-	color.a = 0.6
-	ghost.modulate = color
-	ghost.z_index = _sprite.z_index - 1
+func _setup_trail_line() -> void:
+	if _trail_line == null:
+		return
+	_trail_line.width = trail_width
+	_trail_line.default_color = trail_color
+	_trail_line.clear_points()
+	_trail_points_world.clear()
+	_trail_points_world.append(global_position)
+	_update_trail_line_points()
 
-	var parent_node: Node = get_parent()
-	parent_node.add_child(ghost)
-	var tween: Tween = get_tree().create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(ghost, "modulate:a", 0.0, 0.25)
-	tween.tween_property(ghost, "scale", ghost.scale * 1.1, 0.25)
-	tween.tween_callback(ghost.queue_free)
+
+func _update_trail_line_points() -> void:
+	if _trail_line == null:
+		return
+	var local_points: PackedVector2Array = PackedVector2Array()
+	for world_point in _trail_points_world:
+		local_points.append(to_local(world_point))
+	_trail_line.points = local_points
 
 
 func _play_squash_stretch(_direction_sign: int) -> void:

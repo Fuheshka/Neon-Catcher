@@ -1,7 +1,7 @@
 extends Area2D
 class_name FallingObject
 
-@export_enum("Bonus", "Enemy", "Powerup") var object_type: String = "Bonus"
+@export_enum("Bonus", "Enemy", "GOLDEN") var object_type: String = "Bonus"
 
 """Downward speed in pixels per second."""
 @export var falling_speed: float = 260.0
@@ -18,7 +18,14 @@ class_name FallingObject
 @onready var _screen_notifier: VisibleOnScreenNotifier2D = get_node_or_null("VisibleOnScreenNotifier2D") as VisibleOnScreenNotifier2D
 @onready var _game_manager: GameManager = get_node_or_null("/root/GameManager") as GameManager
 @onready var _sprite: Sprite2D = get_node_or_null("Sprite2D") as Sprite2D
+@onready var _label: Label = get_node_or_null("Label") as Label
 var _base_sprite_scale: Vector2 = Vector2.ONE
+var _base_label_scale: Vector2 = Vector2.ONE
+var _sprite_base_position: Vector2 = Vector2.ZERO
+var _label_base_position: Vector2 = Vector2.ZERO
+
+var _pulse_tween: Tween
+var _glitch_tween: Tween
 
 var _active: bool = true
 
@@ -26,8 +33,15 @@ var _active: bool = true
 func _ready() -> void:
 	if _sprite != null:
 		_base_sprite_scale = _sprite.scale
+		_sprite_base_position = _sprite.position
 		_maybe_infer_object_type()
-		_apply_visual_style()
+	if _label != null:
+		_base_label_scale = _label.scale
+		_label_base_position = _label.position
+	_maybe_infer_object_type()
+	_apply_visual_style()
+	_start_pulse()
+	_start_glitch_flicker()
 	if _screen_notifier != null:
 		# Free the object when it leaves the screen; avoids buildup.
 		_screen_notifier.screen_exited.connect(_on_screen_exited)
@@ -59,26 +73,31 @@ func _get_difficulty_multiplier() -> float:
 
 
 func _apply_visual_style() -> void:
-	if _sprite == null:
-		return
 	var style: Dictionary = _get_style_for_type(object_type)
-	_sprite.scale = _base_sprite_scale * (style.get("scale", Vector2.ONE))
-	var current_color: Color = _sprite.modulate
-	var target_color: Color = style.get("color", current_color)
-	# Preserve custom-tinted bonuses (e.g., golden bonus) by only overriding
-	# color when the current modulate is effectively white.
-	if object_type != "Bonus" or current_color.is_equal_approx(Color.WHITE):
-		_sprite.modulate = target_color
+	if _sprite != null:
+		_sprite.scale = _base_sprite_scale * (style.get("scale", Vector2.ONE))
+		var current_color: Color = _sprite.modulate
+		var target_color: Color = style.get("color", current_color)
+		# Preserve custom-tinted bonuses (e.g., golden bonus) by only overriding
+		# color when the current modulate is effectively white.
+		if object_type != "Bonus" or current_color.is_equal_approx(Color.WHITE):
+			_sprite.modulate = target_color
+	if _label != null:
+		_label.text = style.get("glyph", _label.text)
+		_label.modulate = style.get("color", _label.modulate)
+		_label.scale = _base_label_scale * (style.get("scale", Vector2.ONE))
 
 
 func _get_style_for_type(type_name: String) -> Dictionary:
 	match type_name:
 		"Enemy":
-			return {"scale": Vector2(1.0, 1.0), "color": Color(1.0, 0.35, 0.35)}
-		"Powerup":
-			return {"scale": Vector2(1.05, 1.05), "color": Color(1.0, 0.9, 0.2)}
+			var glyphs: Array[String] = ["X", "@", "#", "%", "&"]
+			return {"scale": Vector2(1.0, 1.0), "color": Color(2.0, 0.1, 0.1, 1.0), "glyph": glyphs[randi() % glyphs.size()]}
+		"GOLDEN":
+			return {"scale": Vector2(1.05, 1.05), "color": Color(1.4, 1.2, 0.3, 1.0), "glyph": "++"}
 		_:
-			return {"scale": Vector2(0.9, 0.9), "color": Color(0.8, 1.0, 0.35)}
+			var glyphs_bonus: Array[String] = ["0", "1"]
+			return {"scale": Vector2(0.9, 0.9), "color": Color(0.0, 2.0, 0.25, 1.0), "glyph": glyphs_bonus[randi() % glyphs_bonus.size()]}
 
 
 func _maybe_infer_object_type() -> void:
@@ -90,7 +109,45 @@ func _maybe_infer_object_type() -> void:
 		return
 	if path.find("enemy") != -1:
 		object_type = "Enemy"
-	elif path.find("power") != -1:
-		object_type = "Powerup"
+	elif path.find("golden") != -1:
+		object_type = "GOLDEN"
 	elif path.find("bonus") != -1:
 		object_type = "Bonus"
+
+
+func _start_pulse() -> void:
+	var target: CanvasItem = _label if _label != null else _sprite
+	if target == null:
+		return
+	if _pulse_tween and _pulse_tween.is_running():
+		_pulse_tween.kill()
+	_pulse_tween = create_tween()
+	_pulse_tween.set_parallel(true)
+	var base_scale: Vector2 = _base_label_scale if _label != null else _base_sprite_scale
+	_pulse_tween.tween_property(target, "scale", base_scale * 1.08, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_pulse_tween.tween_property(target, "modulate", target.modulate * Color(1.1, 1.1, 1.1, 1.0), 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_pulse_tween.tween_property(target, "scale", base_scale, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_pulse_tween.tween_property(target, "modulate", target.modulate, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_pulse_tween.set_loops()
+
+
+func _start_glitch_flicker() -> void:
+	var target: CanvasItem = _label if _label != null else _sprite
+	if target == null:
+		return
+	if _glitch_tween and _glitch_tween.is_running():
+		_glitch_tween.kill()
+	_glitch_tween = create_tween()
+	_glitch_tween.set_loops()
+	_glitch_tween.tween_property(target, "modulate:a", 0.55, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_glitch_tween.tween_property(target, "modulate:a", 1.0, 0.05).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	_glitch_tween.tween_callback(_random_jitter)
+
+
+func _random_jitter() -> void:
+	if _label:
+		_label.rotation = randf_range(-0.04, 0.04)
+		_label.position = _label_base_position + Vector2(randf_range(-2.0, 2.0), randf_range(-2.0, 2.0))
+	if _sprite:
+		_sprite.rotation = randf_range(-0.02, 0.02)
+		_sprite.position = _sprite_base_position + Vector2(randf_range(-1.5, 1.5), randf_range(-1.5, 1.5))
