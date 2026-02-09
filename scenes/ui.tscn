@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://q84vpce34yvx"]
 
+[ext_resource type="Script" uid="uid://b8ttkigeoqh1v" path="res://scripts/webmanager.gd" id="1_gdt2y"]
 [ext_resource type="Script" uid="uid://c6x6j5ax3cxws" path="res://scripts/HUD.gd" id="1_x4jx1"]
 [ext_resource type="FontFile" uid="uid://7gmdxpbn8lpj" path="res://assets/ofont.ru_Fixedsys.ttf" id="1_yev5y"]
 [ext_resource type="Script" uid="uid://cmku4yp7fwhvu" path="res://scripts/GameOverScreen.gd" id="2_yev5y"]
@@ -11,7 +12,10 @@ default_font = ExtResource("1_yev5y")
 default_font = ExtResource("1_yev5y")
 default_font_size = 24
 
-[node name="UI" type="CanvasLayer" unique_id=516871522]
+[node name="UI" type="CanvasLayer" unique_id=516871522 node_paths=PackedStringArray("overlay", "start_button")]
+script = ExtResource("1_gdt2y")
+overlay = NodePath("StartOverlay")
+start_button = NodePath("StartOverlay/VBoxContainer/StartButton")
 
 [node name="HUD" type="Control" parent="." unique_id=1137653371 node_paths=PackedStringArray("score_label", "health_label", "high_score_label")]
 layout_mode = 3
@@ -58,7 +62,6 @@ text = "Health: 3"
 
 [node name="StartOverlay" type="Control" parent="." unique_id=1948373621]
 process_mode = 2
-visible = true
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
