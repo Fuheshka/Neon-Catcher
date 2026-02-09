@@ -8,10 +8,18 @@ var health: int = 3
 var high_score: int = 0
 var is_over: bool = false
 var current_difficulty_factor: float = 1.0
+var _start_overlay: Control
+var _world_environment: WorldEnvironment
+var _low_fps_timer: Timer
+var _low_fps_trigger_count: int = 0
+var _start_gate_open: bool = false
 
 @export var difficulty_step_score: int = 100
 @export var difficulty_step_increment: float = 0.1
 @export var difficulty_max_factor: float = 2.0
+@export var low_fps_threshold: float = 45.0
+@export var low_fps_check_interval: float = 3.0
+@export var low_fps_required_hits: int = 2
 
 @export var hit_stop_duration: float = 0.08
 @export var flash_opacity: float = 0.75
@@ -31,7 +39,11 @@ func _ready() -> void:
 	Events.health_updated.emit(health)
 	call_deferred("_emit_high_score")
 	_update_difficulty_factor()
+	_cache_world_environment()
 	_setup_flash_overlay()
+	_setup_start_overlay()
+	_connect_viewport_resize()
+	_start_low_fps_monitor()
 
 
 func _on_request_add_score(amount: int) -> void:
@@ -145,6 +157,77 @@ func _clear_flash_overlay() -> void:
 		_flash_rect.color = Color(1, 1, 1, 0)
 
 
+func _connect_viewport_resize() -> void:
+	var viewport: Viewport = get_viewport()
+	if viewport and not viewport.size_changed.is_connected(_on_viewport_resized):
+		viewport.size_changed.connect(_on_viewport_resized)
+	_on_viewport_resized()
+
+
+func _on_viewport_resized() -> void:
+	_recenter_ui()
+
+
+func _recenter_ui() -> void:
+	var ui_layer: CanvasLayer = get_node_or_null("UI") as CanvasLayer
+	if ui_layer == null:
+		return
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	_center_control(ui_layer.get_node_or_null("GameOver/VBoxContainer") as Control, viewport_size)
+	_center_control(ui_layer.get_node_or_null("StartOverlay/VBoxContainer") as Control, viewport_size)
+
+
+func _center_control(control: Control, viewport_size: Vector2) -> void:
+	if control == null:
+		return
+	var size: Vector2 = control.size
+	if size == Vector2.ZERO:
+		size = control.get_combined_minimum_size()
+	control.position = (viewport_size * 0.5) - ((size * control.scale) * 0.5)
+
+
+func _setup_start_overlay() -> void:
+	var ui_layer: CanvasLayer = get_node_or_null("UI") as CanvasLayer
+	if ui_layer == null:
+		return
+	_start_overlay = ui_layer.get_node_or_null("StartOverlay") as Control
+	if _start_overlay == null:
+		return
+	if not OS.has_feature("web"):
+		_start_overlay.visible = false
+		_start_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return
+	Engine.time_scale = 0.0
+	_start_overlay.visible = true
+	_start_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	if not _start_overlay.gui_input.is_connected(_on_start_overlay_gui_input):
+		_start_overlay.gui_input.connect(_on_start_overlay_gui_input)
+	var start_button: Button = _start_overlay.get_node_or_null("VBoxContainer/StartButton") as Button
+	if start_button and not start_button.pressed.is_connected(_on_start_overlay_confirmed):
+		start_button.pressed.connect(_on_start_overlay_confirmed)
+	_recenter_ui()
+
+
+func _on_start_overlay_gui_input(event: InputEvent) -> void:
+	if _start_gate_open:
+		return
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		_on_start_overlay_confirmed()
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		_on_start_overlay_confirmed()
+
+
+func _on_start_overlay_confirmed() -> void:
+	if _start_gate_open:
+		return
+	_start_gate_open = true
+	Engine.time_scale = 1.0
+	if is_instance_valid(_start_overlay):
+		_start_overlay.visible = false
+		_start_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	Events.web_ready.emit()
+
+
 func _update_difficulty_factor() -> void:
 	var step_points: int = max(1, difficulty_step_score)
 	var steps: int = int(score / step_points)
@@ -153,3 +236,43 @@ func _update_difficulty_factor() -> void:
 	if is_equal_approx(target, current_difficulty_factor):
 		return
 	current_difficulty_factor = target
+
+
+func _cache_world_environment() -> void:
+	var parent_node: Node = get_parent()
+	if parent_node == null:
+		return
+	_world_environment = parent_node.get_node_or_null("WorldEnvironment") as WorldEnvironment
+
+
+func _start_low_fps_monitor() -> void:
+	if low_fps_threshold <= 0.0:
+		return
+	_low_fps_timer = Timer.new()
+	_low_fps_timer.wait_time = max(0.5, low_fps_check_interval)
+	_low_fps_timer.one_shot = false
+	_low_fps_timer.autostart = true
+	add_child(_low_fps_timer)
+	_low_fps_timer.timeout.connect(_check_low_fps)
+
+
+func _check_low_fps() -> void:
+	if _world_environment == null or _world_environment.environment == null:
+		return
+	var fps: float = float(Engine.get_frames_per_second())
+	if fps <= low_fps_threshold:
+		_low_fps_trigger_count += 1
+		if _low_fps_trigger_count >= max(1, low_fps_required_hits):
+			_disable_heavy_environment_effects()
+	else:
+		_low_fps_trigger_count = 0
+
+
+func _disable_heavy_environment_effects() -> void:
+	if _world_environment == null:
+		return
+	var env: Environment = _world_environment.environment
+	if env == null or not env.glow_enabled:
+		return
+	env.glow_enabled = false
+	push_warning("Disabled glow due to sustained low FPS on web build.")

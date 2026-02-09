@@ -40,6 +40,9 @@ var _tilt_tween: Tween
 var _squash_tween: Tween
 var _last_move_sign: int = 0
 var _base_scale: Vector2
+var _pointer_active: bool = false
+var _pointer_position_x: float = 0.0
+var _pointer_dead_zone: float = 8.0
 @onready var _events: Node = get_node("/root/Events")
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _trail_line: Line2D = $TrailLine
@@ -62,7 +65,15 @@ func _physics_process(delta: float) -> void:
 	if not _enabled:
 		return
 
+	var viewport_width: float = get_viewport_rect().size.x
 	var axis: float = Input.get_axis("move_left", "move_right")
+	if _pointer_active:
+		var dx: float = _pointer_position_x - global_position.x
+		if abs(dx) > _pointer_dead_zone:
+			var normalized: float = dx / max(1.0, viewport_width * 0.35)
+			axis = clamp(normalized, -1.0, 1.0)
+		else:
+			axis = 0.0
 	var target_speed: float = axis * speed
 	var accel: float = acceleration if abs(axis) > 0.01 else friction
 	_velocity_x = move_toward(_velocity_x, target_speed, accel * delta)
@@ -73,7 +84,6 @@ func _physics_process(delta: float) -> void:
 		_play_squash_stretch(move_sign)
 	_last_move_sign = move_sign
 
-	var viewport_width: float = get_viewport_rect().size.x
 	var margin: float = _get_horizontal_margin()
 	# clamp() keeps X within [min, max] to prevent leaving the visible play area.
 	global_position.x = clamp(global_position.x, margin, viewport_width - margin)
@@ -100,8 +110,27 @@ func _on_area_entered(area: Area2D) -> void:
 func _on_game_over() -> void:
 	_enabled = false
 	_velocity_x = 0.0
+	_pointer_active = false
 	_reset_tilt()
 	_reset_squash()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _enabled:
+		return
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		_pointer_active = touch.pressed
+		_pointer_position_x = touch.position.x
+	elif event is InputEventScreenDrag:
+		_pointer_active = true
+		_pointer_position_x = (event as InputEventScreenDrag).position.x
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var mouse_button := event as InputEventMouseButton
+		_pointer_active = mouse_button.pressed
+		_pointer_position_x = mouse_button.position.x
+	elif event is InputEventMouseMotion and _pointer_active:
+		_pointer_position_x = (event as InputEventMouseMotion).position.x
 
 
 func _update_tilt() -> void:

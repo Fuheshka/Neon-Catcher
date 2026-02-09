@@ -56,6 +56,51 @@ modulate = Color(0, 1, 0.02734375, 1)
 layout_mode = 2
 text = "Health: 3"
 
+[node name="StartOverlay" type="Control" parent="." unique_id=1948373621]
+process_mode = 2
+visible = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = SubResource("Theme_yev5y")
+
+[node name="ColorRect" type="ColorRect" parent="StartOverlay" unique_id=1948373622]
+layout_mode = 0
+offset_left = -256.0
+offset_top = -44.0
+offset_right = 804.0
+offset_bottom = 996.0
+mouse_filter = 1
+color = Color(0, 0, 0, 0.647059)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="StartOverlay" unique_id=1948373623]
+layout_mode = 0
+offset_left = 140.0
+offset_top = 332.0
+offset_right = 300.0
+offset_bottom = 472.0
+scale = Vector2(2, 2)
+theme = SubResource("Theme_yev5y")
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="StartOverlay/VBoxContainer" unique_id=1948373624]
+layout_mode = 2
+text = "Cyber-Catcher"
+horizontal_alignment = 1
+
+[node name="InstructionLabel" type="Label" parent="StartOverlay/VBoxContainer" unique_id=1948373625]
+layout_mode = 2
+text = "Tap or click to start"
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="StartOverlay/VBoxContainer" unique_id=1948373626]
+layout_mode = 2
+text = "Start"
+
 [node name="GameOver" type="Control" parent="." unique_id=1437624638 node_paths=PackedStringArray("restart_button", "quit_button")]
 process_mode = 2
 visible = false

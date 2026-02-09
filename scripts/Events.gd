@@ -7,6 +7,7 @@ signal health_updated(new_total: int)
 signal game_over()
 signal high_score_updated(amount: int)
 signal difficulty_increased(level: int)
+signal web_ready()
 
 
 func _ready() -> void:
@@ -35,3 +36,7 @@ func emit_game_over() -> void:
 
 func emit_difficulty_increased(level: int) -> void:
 	difficulty_increased.emit(level)
+
+
+func emit_web_ready() -> void:
+	web_ready.emit()
