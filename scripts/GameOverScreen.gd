@@ -26,4 +26,9 @@ func _on_restart_pressed() -> void:
 
 
 func _on_quit_pressed() -> void:
-	get_tree().quit()
+	# Grab tree once to avoid null after scene switch.
+	var tree := get_tree()
+	if tree == null:
+		return
+	tree.paused = false
+	tree.change_scene_to_file("res://scenes/main_menu.tscn")

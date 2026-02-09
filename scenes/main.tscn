@@ -10,7 +10,7 @@
 [ext_resource type="Script" uid="uid://cb4052vwsyh6h" path="res://scripts/Background.gd" id="5_bg"]
 [ext_resource type="Script" uid="uid://dgk1hndi6u2d8" path="res://scripts/CameraManager.gd" id="6_cam"]
 [ext_resource type="PackedScene" uid="uid://dmnbyyokivc3g" path="res://scenes/GoldenBonus.tscn" id="8_85g3d"]
-[ext_resource type="Script" uid="uid://gridscroll" path="res://scripts/GridScroller.gd" id="9_grid"]
+[ext_resource type="Script" uid="uid://dp5n5mimagchk" path="res://scripts/GridScroller.gd" id="9_grid"]
 
 [sub_resource type="Environment" id="Environment_ya4ey"]
 background_mode = 3
