@@ -50,7 +50,8 @@ func _on_game_over() -> void:
 	if _game_manager:
 		current_score = _game_manager.score
 	
-	if LeaderboardManager.is_high_score(current_score):
+	var leaderboard_mgr = get_node_or_null("/root/LeaderboardManager")
+	if leaderboard_mgr and leaderboard_mgr.is_high_score(current_score):
 		# Show registration screen for high score
 		if _registration_screen:
 			_registration_screen.show_screen(current_score)
@@ -61,7 +62,7 @@ func _on_game_over() -> void:
 		get_tree().paused = true
 
 
-func _on_nickname_submitted() -> void:
+func _on_nickname_submitted(success: bool) -> void:
 	# After nickname is submitted, show the leaderboard
 	if _leaderboard_ui:
 		_leaderboard_ui.show_leaderboard()

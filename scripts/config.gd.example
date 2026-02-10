@@ -1,0 +1,29 @@
+extends Node
+## Configuration template for API keys and secrets
+## INSTRUCTIONS:
+## 1. Copy this file to config.gd (in the same folder)
+## 2. Replace YOUR_API_KEY_HERE and YOUR_GAME_ID_HERE with your actual credentials
+## 3. The config.gd file is already in .gitignore and won't be committed
+
+# SilentWolf API Configuration
+# Get your credentials from: https://silentwolf.com/
+const SW_API_KEY: String = "YOUR_API_KEY_HERE"
+const SW_GAME_ID: String = "YOUR_GAME_ID_HERE"
+
+# Log level: 0 = errors only, 1 = info, 2 = debug
+const SW_LOG_LEVEL: int = 1
+
+
+func _ready() -> void:
+	# Configure SilentWolf when this script is loaded
+	if SW_API_KEY == "YOUR_API_KEY_HERE" or SW_GAME_ID == "YOUR_GAME_ID_HERE":
+		push_warning("⚠️ SilentWolf credentials not configured! Copy config.gd.example to config.gd and add your keys.")
+		push_warning("   Get credentials from: https://silentwolf.com/")
+		return
+	
+	SilentWolf.configure({
+		"api_key": SW_API_KEY,
+		"game_id": SW_GAME_ID,
+		"log_level": SW_LOG_LEVEL
+	})
+	print("✓ SilentWolf configured with game_id: ", SW_GAME_ID)

@@ -87,3 +87,9 @@ custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "CONFIRM"
+
+[node name="StatusLabel" type="Label" parent="Panel/VBoxContainer" unique_id=1915971256]
+visible = false
+modulate = Color(1, 0.94921875, 0, 1)
+layout_mode = 2
+horizontal_alignment = 1
