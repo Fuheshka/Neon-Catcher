@@ -90,7 +90,7 @@ Neon arcade catcher with dynamic difficulty, combo system, online leaderboards. 
 ### API Keys (SilentWolf)
 - **Dev:** Replace placeholders in [scripts/config.gd](scripts/config.gd) (don't commit).
 - **Prod:** GitHub Secrets (`SILENTWOLF_API_KEY`, `SILENTWOLF_GAME_ID`).
-- Guide: [SECURE_API_SETUP.md](SECURE_API_SETUP.md)
+- Guide: [SECURE_API_SETUP.md](documentation/SECURE_API_SETUP.md)
 
 ### Project Settings
 - Viewport: 540x960 (portrait mobile-first).
@@ -101,7 +101,7 @@ Neon arcade catcher with dynamic difficulty, combo system, online leaderboards. 
 - Workflow: [.github/workflows/deploy.yml](.github/workflows/deploy.yml)
 - Trigger: Push to `main` or manual.
 - Steps: Inject secrets → export via `firebelley/godot-export@v5.2.1` → publish `web_build` to Pages.
-- Setup guide: [SECURE_API_SETUP.md](SECURE_API_SETUP.md#L37-L80)
+- Setup guide: [SECURE_API_SETUP.md](documentation/SECURE_API_SETUP.md#L37-L80)
 
 ## 📱 Mobile Support
 - **Touch controls:** Horizontal drag on player. [scripts/player.gd](scripts/player.gd#L100-L130)
