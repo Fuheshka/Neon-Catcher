@@ -7,24 +7,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  contents: write
 
 jobs:
-  export_web:
-    name: Web Export
+  export_and_deploy:
+    name: Export and Deploy to GitHub Pages
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cleanup previous build
-        run: rm -rf web_build && mkdir -p web_build
+      - name: Cleanup and create build folder
+        run: rm -rf build && mkdir -p build/web
 
       - name: Export Web (Godot 4.6)
         uses: firebelley/godot-export@v5.2.1
@@ -35,20 +29,10 @@ jobs:
           export_preset_name: "Web"
           use_godot_4: true
           archive_output: false
-          output_path: web_build
-          # password: ${{ secrets.GODOT_PASSWORD }} # если экспорт защищён
+          output_path: build/web_build
 
-      - name: Upload artifact for Pages
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: web_build
-
-  deploy:
-    needs: export_web
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
+          folder: build/web
+          branch: gh-pages

@@ -28,6 +28,7 @@ Music_Manager="*uid://dbex7pbetvmwp"
 MusicManager="*res://scripts/MusicManager.gd"
 LeaderboardManager="*res://scripts/LeaderboardManager.gd"
 SilentWolf="*uid://d3pvyyrqcnr78"
+WebReady="*uid://oq3jh14ossdq"
 
 [display]
 
