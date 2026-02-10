@@ -10,7 +10,6 @@ const PLAYER_PROFILE_FILE: String = "user://player_profile.json"
 @onready var status_label: Label = $Panel/VBoxContainer/StatusLabel
 
 var current_score: int = 0
-var online_leaderboard: Node = null
 var saved_nickname: String = ""
 var player_id: String = ""  # Unique player identifier
 
@@ -23,8 +22,12 @@ func _ready() -> void:
 	# Load saved player profile
 	_load_player_profile()
 	
-	# Setup OnlineLeaderboard
-	_setup_online_leaderboard()
+	# Connect to OnlineLeaderboard autoload signals
+	var online_leaderboard = get_node_or_null("/root/OnlineLeaderboard")
+	if online_leaderboard:
+		online_leaderboard.score_posted.connect(_on_score_submission_complete)
+	else:
+		push_error("[RegistrationScreen] OnlineLeaderboard autoload not found!")
 	
 	if confirm_button:
 		confirm_button.pressed.connect(_on_confirm_pressed)
@@ -90,9 +93,10 @@ func _submit_score() -> void:
 	if leaderboard_mgr:
 		leaderboard_mgr.add_or_update_score(nickname, current_score, player_id)
 	
-	# Post to online leaderboard with player_id as metadata
+	# Post to online leaderboard
+	var online_leaderboard = get_node_or_null("/root/OnlineLeaderboard")
 	if online_leaderboard:
-		online_leaderboard.post_score_online(nickname, current_score, player_id)
+		online_leaderboard.post_score(nickname, current_score, player_id)
 	else:
 		# Fallback if OnlineLeaderboard is not available
 		push_warning("OnlineLeaderboard not available, using local only")
@@ -123,21 +127,6 @@ func _on_score_submission_complete(success: bool, error_message: String) -> void
 		hide()
 
 
-## Setup the OnlineLeaderboard node
-func _setup_online_leaderboard() -> void:
-	# Create OnlineLeaderboard instance if not exists
-	if not online_leaderboard:
-		var OnlineLeaderboardScript = load("res://scripts/OnlineLeaderboard.gd")
-		if OnlineLeaderboardScript:
-			online_leaderboard = Node.new()
-			online_leaderboard.set_script(OnlineLeaderboardScript)
-			online_leaderboard.name = "OnlineLeaderboard"
-			add_child(online_leaderboard)
-			
-			# Connect signals
-			online_leaderboard.score_post_completed.connect(_on_score_submission_complete)
-		else:
-			push_error("Failed to load OnlineLeaderboard.gd script")
 
 
 ## Set UI to loading state

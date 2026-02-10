@@ -1,5 +1,5 @@
 extends Control
-## LeaderboardUI - Display the top 10 scores
+## LeaderboardUI - Display the top 10 scores with timeout handling
 
 @onready var leaderboard_container: VBoxContainer = $Panel/VBoxContainer/ScrollContainer/LeaderboardContainer
 @onready var close_button: Button = $Panel/VBoxContainer/CloseButton
@@ -8,25 +8,31 @@ extends Control
 
 const LEADERBOARD_ROW = preload("res://scenes/LeaderboardRow.tscn")
 
-var online_leaderboard: Node = null
-
 signal closed()
 
 
 func _ready() -> void:
 	hide()
 	
-	# Setup OnlineLeaderboard
-	_setup_online_leaderboard()
-	
+	# Setup close button
 	if close_button:
 		close_button.pressed.connect(_on_close_pressed)
 	
+	# Initialize status label
 	if status_label:
 		status_label.text = ""
 		status_label.hide()
 	
-	# Listen for leaderboard updates (local fallback)
+	# Connect to OnlineLeaderboard signals
+	var online_leaderboard = get_node_or_null("/root/OnlineLeaderboard")
+	if online_leaderboard:
+		online_leaderboard.leaderboard_received.connect(_on_leaderboard_received)
+		online_leaderboard.leaderboard_error.connect(_on_leaderboard_error)
+		online_leaderboard.request_timeout.connect(_on_request_timeout)
+	else:
+		push_error("[LeaderboardUI] OnlineLeaderboard autoload not found!")
+	
+	# Listen for local leaderboard updates (fallback)
 	var leaderboard_mgr = get_node_or_null("/root/LeaderboardManager")
 	if leaderboard_mgr:
 		leaderboard_mgr.leaderboard_updated.connect(_on_local_leaderboard_updated)
@@ -41,12 +47,21 @@ func refresh_leaderboard() -> void:
 	# Clear existing rows
 	_clear_leaderboard()
 	
-	# Show connecting state
-	_show_status("⚡ CONNECTING TO CYBER-NET...", Color.CYAN)
+	# Show loading state
+	_show_status("⚡ LOADING LEADERBOARD...", Color.CYAN)
+	
+	# Enable close button immediately so user is never locked
+	if close_button:
+		close_button.disabled = false
 	
 	# Fetch online scores
+	var online_leaderboard = get_node_or_null("/root/OnlineLeaderboard")
 	if online_leaderboard:
-		online_leaderboard.get_top_scores(10)
+		if online_leaderboard.is_ready():
+			online_leaderboard.get_high_scores(10)
+		else:
+			_show_status("⚠ Leaderboard not initialized", Color.ORANGE)
+			_display_local_leaderboard()
 	else:
 		# Fallback to local leaderboard
 		push_warning("[LeaderboardUI] OnlineLeaderboard not available, using local leaderboard")
@@ -118,33 +133,33 @@ func _on_leaderboard_error(error_message: String) -> void:
 	push_warning("[LeaderboardUI] Failed to fetch online leaderboard: " + error_message)
 	_show_status("⚠ CONNECTION FAILED - SHOWING LOCAL SCORES", Color.ORANGE)
 	
-	# Only fallback to local when network actually fails
+	# Ensure close button is enabled
+	if close_button:
+		close_button.disabled = false
+	
+	# Fallback to local leaderboard
+	_display_local_leaderboard()
+
+
+## Callback when request times out
+func _on_request_timeout() -> void:
+	print("[LeaderboardUI] ⏱️ Request timed out")
+	_show_status("⏱️ SERVER TIMEOUT. PLEASE TRY AGAIN.", Color.RED)
+	
+	# Enable the back button so user can close
+	if close_button:
+		close_button.disabled = false
+	
+	# Show empty state or local fallback
 	_display_local_leaderboard()
 
 
 ## Callback when local leaderboard updates (fallback)
 func _on_local_leaderboard_updated() -> void:
 	# Only update if we're showing the UI and using local fallback
+	var online_leaderboard = get_node_or_null("/root/OnlineLeaderboard")
 	if visible and not online_leaderboard:
 		_display_local_leaderboard()
-
-
-## Setup the OnlineLeaderboard node
-func _setup_online_leaderboard() -> void:
-	# Create OnlineLeaderboard instance if not exists
-	if not online_leaderboard:
-		var OnlineLeaderboardScript = load("res://scripts/OnlineLeaderboard.gd")
-		if OnlineLeaderboardScript:
-			online_leaderboard = Node.new()
-			online_leaderboard.set_script(OnlineLeaderboardScript)
-			online_leaderboard.name = "OnlineLeaderboard"
-			add_child(online_leaderboard)
-			
-			# Connect signals
-			online_leaderboard.leaderboard_received.connect(_on_leaderboard_received)
-			online_leaderboard.leaderboard_error.connect(_on_leaderboard_error)
-		else:
-			push_error("Failed to load OnlineLeaderboard.gd script")
 
 
 ## Clear all leaderboard rows

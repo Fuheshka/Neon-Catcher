@@ -22,13 +22,13 @@ buses/default_bus_layout="uid://bdetpytkf8t2a"
 [autoload]
 
 Config="*res://scripts/config.gd"
-Events="*uid://cdv0el87cue11"
 SilentWolf="*uid://d3pvyyrqcnr78"
-SilentWolfManager="*res://scripts/SilentWolfManager.gd"
+LeaderboardManager="*res://scripts/LeaderboardManager.gd"
+OnlineLeaderboard="*uid://lgkitet2uajr"
+Events="*uid://cdv0el87cue11"
 Audio_Manager="*uid://dc0ep77pwi1os"
 Music_Manager="*uid://dbex7pbetvmwp"
 MusicManager="*res://scripts/MusicManager.gd"
-LeaderboardManager="*res://scripts/LeaderboardManager.gd"
 WebReady="*uid://oq3jh14ossdq"
 
 [display]
