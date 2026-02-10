@@ -17,7 +17,7 @@ script = ExtResource("1_gdt2y")
 overlay = NodePath("StartOverlay")
 start_button = NodePath("StartOverlay/VBoxContainer/StartButton")
 
-[node name="HUD" type="Control" parent="." unique_id=1137653371 node_paths=PackedStringArray("score_label", "health_label", "high_score_label")]
+[node name="HUD" type="Control" parent="." unique_id=1137653371 node_paths=PackedStringArray("score_label", "health_label", "high_score_label", "combo_label")]
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
@@ -28,6 +28,7 @@ script = ExtResource("1_x4jx1")
 score_label = NodePath("HBoxContainer/ScoreLabel")
 health_label = NodePath("HBoxContainer/HealthLabel")
 high_score_label = NodePath("HBoxContainer/HighScoreLabel")
+combo_label = NodePath("HBoxContainer2/ComboLabel")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="HUD" unique_id=1746482810]
 layout_mode = 0
@@ -59,6 +60,20 @@ size_flags_horizontal = 3
 modulate = Color(0, 1, 0.02734375, 1)
 layout_mode = 2
 text = "Health: 3"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="HUD" unique_id=1511679946]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 40.0
+offset_right = 269.0
+offset_bottom = 80.0
+scale = Vector2(2, 2)
+
+[node name="ComboLabel" type="Label" parent="HUD/HBoxContainer2" unique_id=1030471779]
+modulate = Color(0, 3.0049179, 2.9366734, 1)
+self_modulate = Color(2.0550027, 0.89748734, 2.1535146, 1)
+layout_mode = 2
+text = "Combo: 0"
 
 [node name="StartOverlay" type="Control" parent="." unique_id=1948373621]
 process_mode = 2

@@ -19,6 +19,13 @@ glow_intensity = 1.0
 glow_bloom = 0.5
 glow_hdr_threshold = 0.09
 
+[sub_resource type="Gradient" id="Gradient_ya4ey"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_eb6dy"]
+gradient = SubResource("Gradient_ya4ey")
+width = 2
+
 [node name="Main" type="Node" unique_id=739570215]
 
 [node name="GridBackground" type="ColorRect" parent="." unique_id=1430302803]
@@ -76,3 +83,15 @@ position = Vector2(520, -50)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=349747797]
 environment = SubResource("Environment_ya4ey")
+
+[node name="SpeedLines" type="CPUParticles2D" parent="." unique_id=1598052653]
+position = Vector2(270, -2)
+amount = 15
+texture = SubResource("GradientTexture2D_eb6dy")
+emission_shape = 3
+emission_rect_extents = Vector2(270, 1)
+direction = Vector2(0, 1)
+spread = 0.0
+initial_velocity_min = 1200.0
+initial_velocity_max = 1200.0
+color = Color(1, 1, 1, 0.42352942)

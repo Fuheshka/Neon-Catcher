@@ -1,3 +1,4 @@
+@warning_ignore("integer_division")
 extends Node
 class_name GameManager
 
@@ -8,18 +9,27 @@ var health: int = 3
 var high_score: int = 0
 var is_over: bool = false
 var current_difficulty_factor: float = 1.0
+var _difficulty_penalty: float = 0.0
+var combo_multiplier: float = 1.0
 var _start_overlay: Control
 var _world_environment: WorldEnvironment
 var _low_fps_timer: Timer
 var _low_fps_trigger_count: int = 0
 var _start_gate_open: bool = false
+var _music_manager: Node
 
 @export var difficulty_step_score: int = 100
-@export var difficulty_step_increment: float = 0.1
+@export var difficulty_step_increment: float = 0.05
 @export var difficulty_max_factor: float = 2.0
 @export var low_fps_threshold: float = 45.0
 @export var low_fps_check_interval: float = 3.0
 @export var low_fps_required_hits: int = 2
+
+@export var combo_step: float = 0.25
+@export var combo_max_multiplier: float = 10.0
+
+@export var difficulty_penalty_amount: float = 0.5
+@export var difficulty_recovery_rate: float = 0.05
 
 @export var hit_stop_duration: float = 0.08
 @export var flash_opacity: float = 0.75
@@ -35,10 +45,14 @@ func _ready() -> void:
 	Events.request_add_score.connect(_on_request_add_score)
 	Events.request_take_damage.connect(_on_request_take_damage)
 	Events.game_over.connect(_on_game_over)
+	Events.bonus_missed.connect(_on_bonus_missed)
 	Events.score_updated.emit(score)
 	Events.health_updated.emit(health)
+	Events.combo_changed.emit(combo_multiplier)
 	call_deferred("_emit_high_score")
 	_update_difficulty_factor()
+	_cache_music_manager()
+	_start_music_if_ready()
 	_cache_world_environment()
 	_setup_flash_overlay()
 	_setup_start_overlay()
@@ -49,7 +63,9 @@ func _ready() -> void:
 func _on_request_add_score(amount: int) -> void:
 	if is_over:
 		return
-	score += amount
+	_increase_combo()
+	var awarded: int = int(round(amount * combo_multiplier))
+	score += awarded
 	Events.score_updated.emit(score)
 	if score > high_score:
 		high_score = score
@@ -60,6 +76,9 @@ func _on_request_add_score(amount: int) -> void:
 func _on_request_take_damage(amount: int) -> void:
 	if is_over:
 		return
+	_reset_combo()
+	_reduce_difficulty()
+	Events.impact_occurred.emit()
 	health = max(0, health - amount)
 	Events.health_updated.emit(health)
 	_apply_hit_stop()
@@ -69,9 +88,15 @@ func _on_request_take_damage(amount: int) -> void:
 		Events.game_over.emit()
 
 
+func _on_bonus_missed() -> void:
+	_reset_combo()
+	_reduce_difficulty()
+
+
 func _on_game_over() -> void:
 	Engine.time_scale = 1.0
 	_clear_flash_overlay()
+	_fade_out_music()
 	save_game()
 
 
@@ -230,12 +255,21 @@ func _on_start_overlay_confirmed() -> void:
 
 func _update_difficulty_factor() -> void:
 	var step_points: int = max(1, difficulty_step_score)
-	var steps: int = int(score / step_points)
-	var target: float = 1.0 + (difficulty_step_increment * float(steps))
-	target = clamp(target, 1.0, difficulty_max_factor)
-	if is_equal_approx(target, current_difficulty_factor):
-		return
-	current_difficulty_factor = target
+	var steps: int = int(floor(score / float(step_points)))
+	var base_target: float = 1.0 + (difficulty_step_increment * float(steps))
+	base_target = clamp(base_target, 1.0, difficulty_max_factor)
+	
+	# Постепенно восстанавливаем штраф
+	if _difficulty_penalty > 0.0:
+		_difficulty_penalty = max(0.0, _difficulty_penalty - difficulty_recovery_rate)
+	
+	# Применяем штраф к целевой сложности
+	var target: float = max(1.0, base_target - _difficulty_penalty)
+	
+	# Обновляем сложность и pitch музыки, если значение изменилось
+	if not is_equal_approx(target, current_difficulty_factor):
+		current_difficulty_factor = target
+		_update_music_pitch()
 
 
 func _cache_world_environment() -> void:
@@ -276,3 +310,52 @@ func _disable_heavy_environment_effects() -> void:
 		return
 	env.glow_enabled = false
 	push_warning("Disabled glow due to sustained low FPS on web build.")
+
+
+func _cache_music_manager() -> void:
+	_music_manager = get_node_or_null("/root/MusicManager")
+
+
+func _start_music_if_ready() -> void:
+	if _music_manager == null:
+		return
+	var mm := _music_manager as Node
+	if mm and mm.has_method("start_music"):
+		mm.call_deferred("start_music")
+
+
+func _fade_out_music() -> void:
+	if _music_manager == null:
+		return
+	var mm := _music_manager as Node
+	if mm and mm.has_method("fade_out"):
+		mm.call_deferred("fade_out")
+
+
+func _update_music_pitch() -> void:
+	if _music_manager == null:
+		return
+	var mm := _music_manager as Node
+	if mm and mm.has_method("update_pitch"):
+		mm.call_deferred("update_pitch", current_difficulty_factor)
+
+
+func _increase_combo() -> void:
+	var next_combo: float = combo_multiplier + max(0.01, combo_step)
+	combo_multiplier = clamp(next_combo, 1.0, max(1.0, combo_max_multiplier))
+	Events.combo_changed.emit(combo_multiplier)
+
+
+func _reset_combo() -> void:
+	if combo_multiplier == 1:
+		return
+	combo_multiplier = 1
+	Events.combo_changed.emit(combo_multiplier)
+
+func _reduce_difficulty() -> void:
+	_difficulty_penalty += difficulty_penalty_amount
+	# Сразу применяем штраф
+	_update_difficulty_factor()
+	# Принудительно обновляем pitch музыки немедленно
+	if _music_manager and _music_manager.has_method("update_pitch"):
+		_music_manager.call("update_pitch", current_difficulty_factor)

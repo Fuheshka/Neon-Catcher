@@ -4,6 +4,8 @@
 [ext_resource type="AudioStream" uid="uid://c0nxbb0ytydle" path="res://assets/sounds/score.wav" id="2_m6ggh"]
 [ext_resource type="AudioStream" uid="uid://iupu5dbkfxuh" path="res://assets/sounds/hurt.wav" id="3_aoitu"]
 [ext_resource type="AudioStream" uid="uid://b5y5blcp47upv" path="res://assets/sounds/gameover.wav" id="4_njtn3"]
+[ext_resource type="AudioStream" uid="uid://dxkudbpnavo6t" path="res://assets/sounds/combo_up.wav" id="5_njtn3"]
+[ext_resource type="AudioStream" uid="uid://cr34xmdbkhwqs" path="res://assets/sounds/combo_break.wav" id="6_kq7b2"]
 
 [node name="AudioManager" type="Node" unique_id=1027923424]
 process_mode = 3
@@ -11,3 +13,5 @@ script = ExtResource("1_8qd8g")
 score_sound = ExtResource("2_m6ggh")
 damage_sound = ExtResource("3_aoitu")
 game_over_sound = ExtResource("4_njtn3")
+combo_up_sound = ExtResource("5_njtn3")
+combo_break_sound = ExtResource("6_kq7b2")

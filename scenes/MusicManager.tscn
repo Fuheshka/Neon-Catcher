@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dbex7pbetvmwp"]
+
+[ext_resource type="Script" uid="uid://deen7375i0nga" path="res://scripts/MusicManager.gd" id="1_mvbrv"]
+[ext_resource type="AudioStream" uid="uid://b62i6wsdwg3dq" path="res://assets/sounds/music.ogg" id="2_mvbrv"]
+
+[node name="MusicManager" type="AudioStreamPlayer" unique_id=992363138]
+autoplay = true
+script = ExtResource("1_mvbrv")
+music_stream = ExtResource("2_mvbrv")
+music_path = "uid://b62i6wsdwg3dq"
