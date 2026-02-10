@@ -4,6 +4,7 @@ extends Node
 
 # Signals for cross-node communication
 signal score_post_completed(success: bool, error_message: String)
+signal score_synced_globally()
 signal leaderboard_received(scores: Array[Dictionary])
 signal leaderboard_error(error_message: String)
 
@@ -15,8 +16,20 @@ const REQUEST_TIMEOUT_MS: int = 10000
 var _is_posting: bool = false
 var _is_fetching: bool = false
 
+# Reference to SilentWolfManager
+var _sw_manager: Node = null
+
 
 func _ready() -> void:
+	# Get SilentWolfManager reference
+	_sw_manager = get_node_or_null("/root/SilentWolfManager")
+	
+	# Wait for SilentWolf to be ready
+	if _sw_manager:
+		if not _sw_manager.is_ready():
+			print("[OnlineLeaderboard] Waiting for SilentWolfManager...")
+			await _sw_manager.sw_initialized
+	
 	# Verify SilentWolf is configured
 	_check_configuration()
 
@@ -27,21 +40,27 @@ func _ready() -> void:
 ## @param player_id: Unique player identifier for preventing conflicts
 func post_score_online(player_name: String, score: int, player_id: String = "") -> void:
 	if _is_posting:
-		push_warning("Score post already in progress")
+		push_warning("[OnlineLeaderboard] Score post already in progress")
 		return
 	
 	if not _check_configuration():
-		score_post_completed.emit(false, "SilentWolf not configured properly")
+		var error: String = "SilentWolf not configured properly"
+		_log_error(error)
+		score_post_completed.emit(false, error)
 		return
 	
 	if player_name.strip_edges().is_empty():
-		push_error("Player name cannot be empty")
-		score_post_completed.emit(false, "Invalid player name")
+		var error: String = "Player name cannot be empty"
+		push_error("[OnlineLeaderboard] " + error)
+		_log_error(error)
+		score_post_completed.emit(false, error)
 		return
 	
 	if score < 0:
-		push_error("Score cannot be negative")
-		score_post_completed.emit(false, "Invalid score value")
+		var error: String = "Score cannot be negative"
+		push_error("[OnlineLeaderboard] " + error)
+		_log_error(error)
+		score_post_completed.emit(false, error)
 		return
 	
 	_is_posting = true
@@ -50,87 +69,109 @@ func post_score_online(player_name: String, score: int, player_id: String = "") 
 	var sanitized_name: String = player_name.strip_edges().substr(0, 12)
 	
 	# Prepare metadata with player_id for identification
-	var metadata: Dictionary = {}
+	var metadata: Dictionary = {
+		"timestamp": Time.get_unix_time_from_system(),
+		"platform": OS.get_name()
+	}
+	
 	if not player_id.is_empty():
 		metadata["player_id"] = player_id
-		metadata["device"] = OS.get_name()
 	
-	# Call SilentWolf API
-	print("Posting score to SilentWolf: ", sanitized_name, " - ", score, " (ID: ", player_id.substr(0, 8) if not player_id.is_empty() else "none", "...)")
+	# Log attempt
+	var log_msg: String = "Posting score: " + sanitized_name + " - " + str(score)
+	print("[OnlineLeaderboard] ", log_msg)
+	_log_info(log_msg)
 	
-	# Connect to signal before making request
-	if not SilentWolf.Scores.sw_save_score_complete.is_connected(_on_score_posted):
-		SilentWolf.Scores.sw_save_score_complete.connect(_on_score_posted)
+	# Use the correct API: post_score with await
+	var sw_result: Dictionary = await SilentWolf.Scores.post_score(
+		sanitized_name, 
+		score, 
+		DEFAULT_LEADERBOARD_NAME
+	).sw_post_score_complete
 	
-	# Make the API call with metadata
-	if not metadata.is_empty():
-		await SilentWolf.Scores.save_score(sanitized_name, score, DEFAULT_LEADERBOARD_NAME, metadata).sw_save_score_complete
-	else:
-		await SilentWolf.Scores.save_score(sanitized_name, score, DEFAULT_LEADERBOARD_NAME).sw_save_score_complete
-	
-	# Note: The callback _on_score_posted will handle the result
+	# Process result
+	_is_posting = false
+	_handle_score_post_result(sw_result, sanitized_name, score)
 
 
 ## Fetch top scores from the online leaderboard
 ## @param limit: Number of top scores to retrieve (default: 10)
 func get_top_scores(limit: int = 10) -> void:
 	if _is_fetching:
-		push_warning("Leaderboard fetch already in progress")
+		push_warning("[OnlineLeaderboard] Leaderboard fetch already in progress")
 		return
 	
 	if not _check_configuration():
-		leaderboard_error.emit("SilentWolf not configured properly")
+		var error: String = "SilentWolf not configured properly"
+		_log_error(error)
+		leaderboard_error.emit(error)
 		return
 	
 	if limit <= 0:
-		push_error("Limit must be positive")
-		leaderboard_error.emit("Invalid limit value")
+		var error: String = "Limit must be positive"
+		push_error("[OnlineLeaderboard] " + error)
+		_log_error(error)
+		leaderboard_error.emit(error)
 		return
 	
 	_is_fetching = true
 	
-	print("Fetching top ", limit, " scores from SilentWolf...")
+	var log_msg: String = "Fetching top " + str(limit) + " scores..."
+	print("[OnlineLeaderboard] ", log_msg)
+	_log_info(log_msg)
 	
-	# Connect to signal before making request
-	if not SilentWolf.Scores.sw_get_scores_complete.is_connected(_on_scores_received):
-		SilentWolf.Scores.sw_get_scores_complete.connect(_on_scores_received)
+	# Use the correct API: get_high_scores with await
+	var sw_result: Dictionary = await SilentWolf.Scores.get_high_scores(limit).sw_get_scores_complete
 	
-	# Make the API call
-	await SilentWolf.Scores.get_scores(limit, DEFAULT_LEADERBOARD_NAME).sw_get_scores_complete
-	
-	# Note: The callback _on_scores_received will handle the result
+	# Process result
+	_is_fetching = false
+	_handle_scores_fetch_result(sw_result)
 
 
-## Callback when score posting completes
-func _on_score_posted(sw_result: Dictionary) -> void:
-	_is_posting = false
-	
-	# Disconnect the signal
-	if SilentWolf.Scores.sw_save_score_complete.is_connected(_on_score_posted):
-		SilentWolf.Scores.sw_save_score_complete.disconnect(_on_score_posted)
+## Handle the result of score posting
+func _handle_score_post_result(sw_result: Dictionary, player_name: String, score: int) -> void:
+	# Log the raw result for debugging
+	print("[OnlineLeaderboard] Score post result: ", sw_result)
 	
 	# Check if the request was successful
-	if "success" in sw_result and sw_result["success"]:
-		print("Score posted successfully! Score ID: ", sw_result.get("score_id", "unknown"))
+	if sw_result.get("success", false):
+		var score_id: String = sw_result.get("score_id", "unknown")
+		var success_msg: String = "✓ Score posted! Player: " + player_name + ", Score: " + str(score) + ", ID: " + score_id
+		print("[OnlineLeaderboard] ", success_msg)
+		_log_info(success_msg)
+		
+		score_synced_globally.emit()
 		score_post_completed.emit(true, "")
 	else:
+		# Extract error information
 		var error_msg: String = sw_result.get("error", "Unknown error")
-		push_error("Failed to post score: " + error_msg)
+		var http_status: int = sw_result.get("http_status", 0)
+		
+		var full_error: String = "Failed to post score: " + error_msg
+		if http_status > 0:
+			full_error += " (HTTP " + str(http_status) + ")"
+		
+		push_error("[OnlineLeaderboard] " + full_error)
+		_log_error(full_error)
+		
+		# Log additional details if available
+		if "error_details" in sw_result:
+			_log_error("Details: " + str(sw_result["error_details"]))
+		
 		score_post_completed.emit(false, error_msg)
 
 
-## Callback when leaderboard scores are received
-func _on_scores_received(sw_result: Dictionary) -> void:
-	_is_fetching = false
-	
-	# Disconnect the signal
-	if SilentWolf.Scores.sw_get_scores_complete.is_connected(_on_scores_received):
-		SilentWolf.Scores.sw_get_scores_complete.disconnect(_on_scores_received)
+## Handle the result of leaderboard fetching
+func _handle_scores_fetch_result(sw_result: Dictionary) -> void:
+	# Log the raw result for debugging
+	print("[OnlineLeaderboard] Leaderboard fetch result: ", sw_result)
 	
 	# Check if the request was successful
-	if "success" in sw_result and sw_result["success"]:
+	if sw_result.get("success", false):
 		var scores: Array = sw_result.get("scores", [])
-		print("Leaderboard received: ", scores.size(), " scores")
+		var success_msg: String = "✓ Leaderboard received: " + str(scores.size()) + " scores"
+		print("[OnlineLeaderboard] ", success_msg)
+		_log_info(success_msg)
 		
 		# Convert the scores to a typed array of dictionaries
 		var typed_scores: Array[Dictionary] = []
@@ -140,26 +181,36 @@ func _on_scores_received(sw_result: Dictionary) -> void:
 		
 		leaderboard_received.emit(typed_scores)
 	else:
+		# Extract error information
 		var error_msg: String = sw_result.get("error", "Unknown error")
-		push_error("Failed to fetch leaderboard: " + error_msg)
+		var http_status: int = sw_result.get("http_status", 0)
+		
+		var full_error: String = "Failed to fetch leaderboard: " + error_msg
+		if http_status > 0:
+			full_error += " (HTTP " + str(http_status) + ")"
+		
+		push_error("[OnlineLeaderboard] " + full_error)
+		_log_error(full_error)
+		
 		leaderboard_error.emit(error_msg)
 
 
 ## Verify that SilentWolf is properly configured
 func _check_configuration() -> bool:
 	if not SilentWolf:
-		push_error("SilentWolf autoload not found! Make sure it's enabled in project settings.")
+		push_error("[OnlineLeaderboard] SilentWolf autoload not found!")
+		return false
+	
+	# Check if SilentWolfManager is ready
+	if _sw_manager and not _sw_manager.is_ready():
+		push_error("[OnlineLeaderboard] SilentWolfManager not ready!")
 		return false
 	
 	var api_key: String = SilentWolf.config.get("api_key", "")
 	var game_id: String = SilentWolf.config.get("game_id", "")
 	
-	if api_key.is_empty() or api_key == "YOURAPIKEY" or api_key == "FmKF4gtm0Z2RbUAEU62kZ2OZoYLj4PYOURAPIKEY":
-		push_error("SilentWolf API Key not configured! Please set your API key.")
-		return false
-	
-	if game_id.is_empty() or game_id == "YOURGAMEID":
-		push_error("SilentWolf Game ID not configured! Please set your Game ID.")
+	if api_key.is_empty() or game_id.is_empty():
+		push_error("[OnlineLeaderboard] SilentWolf credentials not configured!")
 		return false
 	
 	return true
@@ -168,3 +219,26 @@ func _check_configuration() -> bool:
 ## Check if the game is running on web platform
 func is_web_platform() -> bool:
 	return OS.has_feature("web")
+
+
+## Log info message to browser console (web builds only)
+func _log_info(message: String) -> void:
+	if not is_web_platform():
+		return
+	
+	if _sw_manager and _sw_manager.has_method("log_to_console"):
+		_sw_manager.log_to_console(message)
+	else:
+		JavaScriptBridge.eval("console.log('[OnlineLeaderboard] " + message.replace("'", "\\'") + "');")
+
+
+## Log error message to browser console (web builds only)
+func _log_error(message: String) -> void:
+	if not is_web_platform():
+		return
+	
+	if _sw_manager and _sw_manager.has_method("log_error_to_console"):
+		_sw_manager.log_error_to_console(message)
+	else:
+		JavaScriptBridge.eval("console.error('[OnlineLeaderboard] " + message.replace("'", "\\'") + "');")
+

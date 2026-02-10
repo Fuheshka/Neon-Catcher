@@ -41,15 +41,16 @@ func refresh_leaderboard() -> void:
 	# Clear existing rows
 	_clear_leaderboard()
 	
-	# Show loading state
-	_show_status("Loading leaderboard...", Color.YELLOW)
+	# Show connecting state
+	_show_status("⚡ CONNECTING TO CYBER-NET...", Color.CYAN)
 	
 	# Fetch online scores
 	if online_leaderboard:
 		online_leaderboard.get_top_scores(10)
 	else:
 		# Fallback to local leaderboard
-		push_warning("OnlineLeaderboard not available, using local leaderboard")
+		push_warning("[LeaderboardUI] OnlineLeaderboard not available, using local leaderboard")
+		_show_status("⚠ OFFLINE - SHOWING LOCAL SCORES", Color.ORANGE)
 		_display_local_leaderboard()
 
 
@@ -93,26 +94,31 @@ func _display_scores(scores: Array[Dictionary]) -> void:
 func _display_local_leaderboard() -> void:
 	var leaderboard_mgr = get_node_or_null("/root/LeaderboardManager")
 	if not leaderboard_mgr:
-		push_error("LeaderboardManager autoload not found")
+		push_error("[LeaderboardUI] LeaderboardManager autoload not found")
 		return
 	
 	var leaderboard: Array[Dictionary] = leaderboard_mgr.get_leaderboard()
 	_display_scores(leaderboard)
-	_show_status("Showing local scores", Color.ORANGE)
+	# Note: Status label is set by caller (_on_leaderboard_error)
 
 
 ## Callback when online leaderboard is received
 func _on_leaderboard_received(scores: Array[Dictionary]) -> void:
-	print("Received ", scores.size(), " scores from online leaderboard")
+	print("[LeaderboardUI] ✓ Received ", scores.size(), " scores from online leaderboard")
+	
+	# Hide status on success - scores speak for themselves
+	if status_label:
+		status_label.hide()
+	
 	_display_scores(scores)
 
 
 ## Callback when online leaderboard fetch fails
 func _on_leaderboard_error(error_message: String) -> void:
-	push_warning("Failed to fetch online leaderboard: " + error_message)
-	_show_status("Connection failed - showing local scores", Color.ORANGE)
+	push_warning("[LeaderboardUI] Failed to fetch online leaderboard: " + error_message)
+	_show_status("⚠ CONNECTION FAILED - SHOWING LOCAL SCORES", Color.ORANGE)
 	
-	# Fallback to local leaderboard
+	# Only fallback to local when network actually fails
 	_display_local_leaderboard()
 
 

@@ -17,6 +17,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Inject SilentWolf API Keys
+        run: |
+          echo "🔐 Injecting SilentWolf API credentials..."
+          sed -i 's/SW_API_KEY_PLACEHOLDER/${{ secrets.SILENTWOLF_API_KEY }}/g' scripts/config.gd
+          sed -i 's/SW_GAME_ID_PLACEHOLDER/${{ secrets.SILENTWOLF_GAME_ID }}/g' scripts/config.gd
+          echo "✓ API keys injected successfully"
+          echo "📝 Verifying config.gd (masked):"
+          grep -E "SW_API_KEY|SW_GAME_ID" scripts/config.gd | sed 's/\(.\{20\}\).*/\1.../' || echo "Config ready"
+
       - name: Cleanup and create build folder
         run: rm -rf web_build && mkdir -p web_build
 
