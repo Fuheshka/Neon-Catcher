@@ -1,6 +1,8 @@
 extends Control
 ## RegistrationScreen - UI for entering nickname after achieving a high score
 
+const PLAYER_PROFILE_FILE: String = "user://player_profile.json"
+
 @onready var nickname_input: LineEdit = $Panel/VBoxContainer/NicknameInput
 @onready var confirm_button: Button = $Panel/VBoxContainer/ConfirmButton
 @onready var title_label: Label = $Panel/VBoxContainer/TitleLabel
@@ -9,12 +11,17 @@ extends Control
 
 var current_score: int = 0
 var online_leaderboard: Node = null
+var saved_nickname: String = ""
+var player_id: String = ""  # Unique player identifier
 
 signal nickname_submitted(success: bool)
 
 
 func _ready() -> void:
 	hide()
+	
+	# Load saved player profile
+	_load_player_profile()
 	
 	# Setup OnlineLeaderboard
 	_setup_online_leaderboard()
@@ -37,7 +44,17 @@ func show_screen(score: int) -> void:
 		score_label.text = "Your Score: " + str(score)
 	
 	if nickname_input:
-		nickname_input.text = ""
+		# Auto-fill with saved nickname if exists
+		if not saved_nickname.is_empty():
+			nickname_input.text = saved_nickname
+			nickname_input.select_all()
+			if title_label:
+				title_label.text = "New High Score!"
+		else:
+			nickname_input.text = ""
+			if title_label:
+				title_label.text = "Enter Your Nickname"
+		
 		nickname_input.grab_focus()
 	
 	show()
@@ -61,18 +78,21 @@ func _submit_score() -> void:
 	if nickname.is_empty():
 		nickname = "Anonymous"
 	
+	# Save nickname for future use
+	_save_player_profile(nickname)
+	
 	# Disable input during submission
 	_set_ui_loading(true)
 	_show_status("Submitting score...", Color.YELLOW)
 	
-	# Add to local leaderboard (backup)
+	# Add to local leaderboard (will update if same player)
 	var leaderboard_mgr = get_node_or_null("/root/LeaderboardManager")
 	if leaderboard_mgr:
-		leaderboard_mgr.add_score(nickname, current_score)
+		leaderboard_mgr.add_or_update_score(nickname, current_score, player_id)
 	
-	# Post to online leaderboard
+	# Post to online leaderboard with player_id as metadata
 	if online_leaderboard:
-		online_leaderboard.post_score_online(nickname, current_score)
+		online_leaderboard.post_score_online(nickname, current_score, player_id)
 	else:
 		# Fallback if OnlineLeaderboard is not available
 		push_warning("OnlineLeaderboard not available, using local only")
@@ -136,3 +156,79 @@ func _show_status(message: String, color: Color) -> void:
 		status_label.text = message
 		status_label.modulate = color
 		status_label.show()
+
+
+## Load saved player profile
+func _load_player_profile() -> void:
+	if not FileAccess.file_exists(PLAYER_PROFILE_FILE):
+		# Generate new player ID for first-time player
+		player_id = _generate_player_id()
+		print("✨ New player ID generated: ", player_id)
+		return
+	
+	var file = FileAccess.open(PLAYER_PROFILE_FILE, FileAccess.READ)
+	if file == null:
+		player_id = _generate_player_id()
+		return
+	
+	var json_string = file.get_as_text()
+	file.close()
+	
+	var json = JSON.new()
+	var error = json.parse(json_string)
+	
+	if error == OK and json.data is Dictionary:
+		var data = json.data
+		saved_nickname = data.get("nickname", "")
+		player_id = data.get("player_id", "")
+		
+		# Generate player_id if missing (for old profiles)
+		if player_id.is_empty():
+			player_id = _generate_player_id()
+			print("🔄 Upgrading old profile with player_id: ", player_id)
+			_save_player_profile(saved_nickname)  # Re-save with player_id
+		else:
+			print("✓ Loaded player profile: ", saved_nickname, " (ID: ", player_id.substr(0, 8), "...)")
+	else:
+		player_id = _generate_player_id()
+
+
+## Save player profile for future use
+func _save_player_profile(nickname: String) -> void:
+	var profile = {
+		"nickname": nickname,
+		"player_id": player_id,
+		"last_updated": Time.get_unix_time_from_system()
+	}
+	
+	var file = FileAccess.open(PLAYER_PROFILE_FILE, FileAccess.WRITE)
+	if file == null:
+		push_error("Failed to save player profile: " + str(FileAccess.get_open_error()))
+		return
+	
+	var json_string = JSON.stringify(profile, "\t")
+	file.store_string(json_string)
+	file.close()
+	
+	saved_nickname = nickname
+	print("✓ Saved player profile: ", nickname, " (ID: ", player_id.substr(0, 8), "...)")
+
+
+## Generate a unique player ID
+func _generate_player_id() -> String:
+	# Generate UUID-like identifier
+	var timestamp = Time.get_unix_time_from_system()
+	var random_bytes = []
+	
+	for i in range(16):
+		random_bytes.append(randi() % 256)
+	
+	# Format as hex string
+	var hex_chars = "0123456789abcdef"
+	var result = ""
+	
+	for byte in random_bytes:
+		result += hex_chars[byte >> 4]
+		result += hex_chars[byte & 0xF]
+	
+	return str(timestamp) + "-" + result

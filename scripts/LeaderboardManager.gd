@@ -47,6 +47,63 @@ func add_score(nickname: String, score: int) -> void:
 	leaderboard_updated.emit()
 
 
+## Add or update player score (prevents duplicate entries for same player)
+func add_or_update_score(nickname: String, score: int, player_id: String = "") -> void:
+	var sanitized_name: String = nickname.strip_edges().substr(0, 12)
+	
+	# Check if player already exists (by player_id if provided, otherwise by name)
+	var player_index: int = -1
+	for i in range(leaderboard.size()):
+		var entry = leaderboard[i]
+		# Match by player_id if both have it
+		if not player_id.is_empty() and entry.has("player_id") and entry["player_id"] == player_id:
+			player_index = i
+			break
+		# Fallback to name matching (for backward compatibility)
+		elif player_id.is_empty() and entry["name"] == sanitized_name:
+			player_index = i
+			break
+	
+	if player_index >= 0:
+		# Player exists - update only if new score is higher
+		var old_score: int = leaderboard[player_index]["score"]
+		if score > old_score:
+			print("🔄 Updating ", sanitized_name, "'s score: ", old_score, " → ", score)
+			leaderboard[player_index]["score"] = score
+			leaderboard[player_index]["name"] = sanitized_name  # Update name if changed
+			if not player_id.is_empty():
+				leaderboard[player_index]["player_id"] = player_id
+			
+			# Re-sort after update
+			leaderboard.sort_custom(func(a, b): return a["score"] > b["score"])
+			
+			save_leaderboard()
+			leaderboard_updated.emit()
+		else:
+			print("❌ Score ", score, " is not higher than existing ", old_score, " for ", sanitized_name)
+	else:
+		# New player - add entry
+		print("✨ New player: ", sanitized_name, " with score: ", score)
+		var entry: Dictionary = {
+			"name": sanitized_name,
+			"score": score
+		}
+		
+		# Add player_id if provided
+		if not player_id.is_empty():
+			entry["player_id"] = player_id
+		
+		leaderboard.append(entry)
+		leaderboard.sort_custom(func(a, b): return a["score"] > b["score"])
+		
+		# Keep only top 10
+		if leaderboard.size() > MAX_ENTRIES:
+			leaderboard.resize(MAX_ENTRIES)
+		
+		save_leaderboard()
+		leaderboard_updated.emit()
+
+
 ## Get the full leaderboard
 func get_leaderboard() -> Array[Dictionary]:
 	return leaderboard.duplicate()

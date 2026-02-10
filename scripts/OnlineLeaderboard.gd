@@ -24,7 +24,8 @@ func _ready() -> void:
 ## Post a score to the online leaderboard
 ## @param player_name: The player's nickname (max 12 characters)
 ## @param score: The score value to submit
-func post_score_online(player_name: String, score: int) -> void:
+## @param player_id: Unique player identifier for preventing conflicts
+func post_score_online(player_name: String, score: int, player_id: String = "") -> void:
 	if _is_posting:
 		push_warning("Score post already in progress")
 		return
@@ -48,15 +49,24 @@ func post_score_online(player_name: String, score: int) -> void:
 	# Sanitize player name
 	var sanitized_name: String = player_name.strip_edges().substr(0, 12)
 	
+	# Prepare metadata with player_id for identification
+	var metadata: Dictionary = {}
+	if not player_id.is_empty():
+		metadata["player_id"] = player_id
+		metadata["device"] = OS.get_name()
+	
 	# Call SilentWolf API
-	print("Posting score to SilentWolf: ", sanitized_name, " - ", score)
+	print("Posting score to SilentWolf: ", sanitized_name, " - ", score, " (ID: ", player_id.substr(0, 8) if not player_id.is_empty() else "none", "...)")
 	
 	# Connect to signal before making request
 	if not SilentWolf.Scores.sw_save_score_complete.is_connected(_on_score_posted):
 		SilentWolf.Scores.sw_save_score_complete.connect(_on_score_posted)
 	
-	# Make the API call
-	await SilentWolf.Scores.save_score(sanitized_name, score, DEFAULT_LEADERBOARD_NAME).sw_save_score_complete
+	# Make the API call with metadata
+	if not metadata.is_empty():
+		await SilentWolf.Scores.save_score(sanitized_name, score, DEFAULT_LEADERBOARD_NAME, metadata).sw_save_score_complete
+	else:
+		await SilentWolf.Scores.save_score(sanitized_name, score, DEFAULT_LEADERBOARD_NAME).sw_save_score_complete
 	
 	# Note: The callback _on_score_posted will handle the result
 
