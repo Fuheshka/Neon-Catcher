@@ -130,7 +130,7 @@ func _apply_hit_stop() -> void:
 	Engine.time_scale = 0.0
 	if _hit_stop_timer and _hit_stop_timer.timeout.is_connected(_end_hit_stop):
 		_hit_stop_timer.timeout.disconnect(_end_hit_stop)
-	_hit_stop_timer = get_tree().create_timer(hit_stop_duration, true, false, true)
+	_hit_stop_timer = get_tree().create_timer(hit_stop_duration, false, true, true)
 	_hit_stop_timer.timeout.connect(_end_hit_stop)
 
 

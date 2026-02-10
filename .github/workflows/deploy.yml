@@ -23,6 +23,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cleanup previous build
+        run: rm -rf web_build && mkdir -p web_build
+
       - name: Export Web (Godot 4.6)
         uses: firebelley/godot-export@v5.2.1
         with:
@@ -30,6 +33,7 @@ jobs:
           godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_export_templates.tpz
           relative_project_path: .
           export_preset_name: "Web"
+          use_godot_4: true
           archive_output: false
           output_path: web_build
           # password: ${{ secrets.GODOT_PASSWORD }} # если экспорт защищён

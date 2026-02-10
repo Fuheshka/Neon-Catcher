@@ -25,7 +25,7 @@ const SCREEN_WIDTH: float = 540.0
 @export var touch_deadzone: float = 8.0
 
 """Number of points retained in the neon trail."""
-@export var trail_point_limit: int = 22
+@export var trail_point_limit: int = 15
 
 """Minimum distance between trail points (pixels)."""
 @export var trail_spacing: float = 10.0
@@ -94,6 +94,9 @@ func _physics_process(delta: float) -> void:
 	_last_move_sign = move_sign
 
 	_update_tilt()
+
+
+func _process(delta: float) -> void:
 	_update_trail(delta)
 
 
@@ -187,20 +190,17 @@ func _update_trail(delta: float) -> void:
 	if _trail_points_world.is_empty():
 		_trail_points_world.append(global_position)
 
-	if abs(_velocity_x) < trail_min_speed:
-		if _trail_points_world.size() > 1:
-			var remove_count: int = clampi(int(ceil(trail_decay_rate * delta)), 1, _trail_points_world.size() - 1)
-			for i in range(remove_count):
-				_trail_points_world.remove_at(0)
-		_update_trail_line_points()
-		return
-
 	var last_point: Vector2 = _trail_points_world[_trail_points_world.size() - 1]
 	var distance: float = global_position.distance_to(last_point)
 	if distance >= trail_spacing:
 		_trail_points_world.append(global_position)
 	else:
 		_trail_points_world[_trail_points_world.size() - 1] = global_position
+
+	if abs(_velocity_x) < trail_min_speed and _trail_points_world.size() > 1:
+		var remove_count: int = clampi(int(ceil(trail_decay_rate * delta)), 1, _trail_points_world.size() - 1)
+		for i in range(remove_count):
+			_trail_points_world.remove_at(0)
 
 	while _trail_points_world.size() > trail_point_limit:
 		_trail_points_world.remove_at(0)
@@ -211,8 +211,12 @@ func _update_trail(delta: float) -> void:
 func _setup_trail_line() -> void:
 	if _trail_line == null:
 		return
+	_trail_line.top_level = true
+	_trail_line.global_position = Vector2.ZERO
 	_trail_line.width = trail_width
 	_trail_line.default_color = trail_color
+	_trail_line.gradient = _build_trail_gradient()
+	_trail_line.width_curve = _build_trail_width_curve()
 	_trail_line.clear_points()
 	_trail_points_world.clear()
 	_trail_points_world.append(global_position)
@@ -222,10 +226,22 @@ func _setup_trail_line() -> void:
 func _update_trail_line_points() -> void:
 	if _trail_line == null:
 		return
-	var local_points: PackedVector2Array = PackedVector2Array()
-	for world_point in _trail_points_world:
-		local_points.append(to_local(world_point))
-	_trail_line.points = local_points
+	_trail_line.points = _trail_points_world
+
+
+func _build_trail_gradient() -> Gradient:
+	var gradient := Gradient.new()
+	gradient.add_point(0.0, trail_color)
+	gradient.add_point(0.5, Color(trail_color.r, trail_color.g, trail_color.b, trail_color.a * 0.85))
+	gradient.add_point(1.0, Color(trail_color.r, trail_color.g, trail_color.b, 0.0))
+	return gradient
+
+
+func _build_trail_width_curve() -> Curve:
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 1.0))
+	curve.add_point(Vector2(1.0, 0.1))
+	return curve
 
 
 func _play_squash_stretch(_direction_sign: int) -> void:

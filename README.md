@@ -34,7 +34,7 @@ Neon arcade catcher tuned for GitHub Pages, single-threaded HTML5 export.
   ```
 
 ## CI/CD
-- Workflow: [scripts/.github/workflows/deploy-web.yml](scripts/.github/workflows/deploy-web.yml)
+- Workflow: [scripts/.github/workflows/deploy.yml](scripts/.github/workflows/deploy.yml)
 - On push to `main` or manual; exports via `firebelley/godot-export@v5.2.1`, publishes `web_build` to Pages.
 
 ## Author
