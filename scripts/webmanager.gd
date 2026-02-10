@@ -9,12 +9,14 @@ signal start_game_requested
 var _activated: bool = false
 
 func _ready() -> void:
+	check_web_environment()
 	_check_renderer()
 	if not OS.has_feature("web"):
 		_hide_overlay()
 		return
 	_pause_game()
 	_connect_inputs()
+	_wait_for_silentwolf()
 
 func _connect_inputs() -> void:
 	if is_instance_valid(start_button) and not start_button.pressed.is_connected(_on_user_activation):
@@ -57,7 +59,40 @@ func _unmute_audio() -> void:
 	AudioServer.set_bus_mute(0, false)
 	AudioServer.set_bus_volume_db(0, 0.0)
 
+func check_web_environment() -> void:
+	if not OS.has_feature("web"):
+		return
+	
+	print("=== WEB ENVIRONMENT CHECK ===")
+	print("OS Name: ", OS.get_name())
+	print("OS Model: ", OS.get_model_name())
+	print("Processor Count: ", OS.get_processor_count())
+	print("Locale: ", OS.get_locale())
+	print("Screen Count: ", DisplayServer.get_screen_count())
+	print("Screen Size: ", DisplayServer.screen_get_size())
+	
+	if JavaScriptBridge.eval("typeof navigator !== 'undefined'"):
+		print("User Agent: ", JavaScriptBridge.eval("navigator.userAgent"))
+		print("Platform: ", JavaScriptBridge.eval("navigator.platform"))
+		print("Language: ", JavaScriptBridge.eval("navigator.language"))
+	
+	print("=== END WEB ENVIRONMENT CHECK ===")
+
 func _check_renderer() -> void:
 	var method: String = str(ProjectSettings.get_setting("rendering/renderer/rendering_method", ""))
 	if method != "gl_compatibility":
 		push_warning("Для Web нужен Compatibility renderer. Сейчас: %s" % method)
+
+func _wait_for_silentwolf() -> void:
+	# Wait for SilentWolf to be properly configured before allowing game start
+	if not OS.has_feature("web"):
+		return
+	
+	if has_node("/root/SilentWolf"):
+		var sw = get_node("/root/SilentWolf")
+		if sw and sw.has_method("configure"):
+			print("SilentWolf detected and ready")
+		else:
+			push_warning("SilentWolf node exists but configure method not found")
+	else:
+		print("SilentWolf not loaded (optional)")

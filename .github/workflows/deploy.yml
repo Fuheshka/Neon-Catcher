@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Cleanup and create build folder
-        run: rm -rf build && mkdir -p build/web
+        run: rm -rf web_build && mkdir -p web_build
 
       - name: Export Web (Godot 4.6)
         uses: firebelley/godot-export@v5.2.1
@@ -26,13 +26,12 @@ jobs:
           godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_linux.x86_64.zip
           godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_export_templates.tpz
           relative_project_path: .
-          export_preset_name: "Web"
-          use_godot_4: true
+          relative_export_path: web_build
+          use_preset_export_path: true
           archive_output: false
-          output_path: build/web_build
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: build/web
+          folder: web_build
           branch: gh-pages
