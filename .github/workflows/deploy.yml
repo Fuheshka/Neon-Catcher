@@ -30,8 +30,45 @@ jobs:
           use_preset_export_path: true
           archive_output: false
 
+      - name: Verify export structure
+        run: |
+          echo "=== Build directory structure ==="
+          ls -R web_build
+          echo "=== Checking for index.html ==="
+          find web_build -name "index.html" -type f
+
+      - name: Flatten folder structure
+        run: |
+          echo "=== Flattening export structure ==="
+          # Check if files are in a nested 'web' folder
+          if [ -d "web_build/web" ]; then
+            echo "Found nested web folder, moving contents up..."
+            mv web_build/web/* web_build/ || true
+            rmdir web_build/web || true
+          fi
+          
+          # Ensure index.html is directly in web_build
+          INDEX_PATH=$(find web_build -name "index.html" -type f | head -n 1)
+          if [ -n "$INDEX_PATH" ] && [ "$INDEX_PATH" != "web_build/index.html" ]; then
+            echo "Moving index.html to root: $INDEX_PATH -> web_build/index.html"
+            INDEX_DIR=$(dirname "$INDEX_PATH")
+            if [ "$INDEX_DIR" != "web_build" ]; then
+              mv "$INDEX_DIR"/* web_build/ 2>/dev/null || true
+              find web_build -mindepth 1 -type d -empty -delete
+            fi
+          fi
+          
+          # Create .nojekyll to prevent GitHub from ignoring files with underscores
+          touch web_build/.nojekyll
+          
+          echo "=== Final structure ==="
+          ls -la web_build
+          echo "=== Verifying index.html location ==="
+          ls -la web_build/index.html
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: web_build
           branch: gh-pages
+          clean: true
