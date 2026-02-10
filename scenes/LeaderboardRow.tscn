@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://d2n7yo4vvqboe"]
+
+[ext_resource type="Theme" uid="uid://c0jn3dnnk56d4" path="res://theme1.tres" id="1_ctn7n"]
+
+[node name="LeaderboardRow" type="HBoxContainer" unique_id=1848350914]
+custom_minimum_size = Vector2(0, 40)
+offset_right = 600.0
+offset_bottom = 40.0
+theme = ExtResource("1_ctn7n")
+
+[node name="RankLabel" type="Label" parent="." unique_id=1652110628]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "1."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="." unique_id=142554438]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "PlayerName"
+vertical_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="." unique_id=279257911]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "99999"
+horizontal_alignment = 2
+vertical_alignment = 1

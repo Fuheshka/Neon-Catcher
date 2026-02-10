@@ -1,0 +1,89 @@
+[gd_scene format=3 uid="uid://bqwmhu6dmfxqt"]
+
+[ext_resource type="FontFile" uid="uid://7gmdxpbn8lpj" path="res://assets/ofont.ru_Fixedsys.ttf" id="1_b5nkj"]
+[ext_resource type="Script" uid="uid://bvvsjrftc1dh2" path="res://scripts/RegistrationScreen.gd" id="1_k3h4p"]
+
+[sub_resource type="Theme" id="Theme_15wku"]
+default_font = ExtResource("1_b5nkj")
+default_font_size = 25
+
+[node name="RegistrationScreen" type="Control" unique_id=1623194373]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_15wku")
+script = ExtResource("1_k3h4p")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=281450585]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="Panel" type="Panel" parent="." unique_id=448423492]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel" unique_id=1389953392]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="Panel/VBoxContainer" unique_id=824952804]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "NEW HIGH SCORE!"
+horizontal_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="Panel/VBoxContainer" unique_id=733555955]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Your Score: 0"
+horizontal_alignment = 1
+
+[node name="SpacerTop" type="Control" parent="Panel/VBoxContainer" unique_id=777773347]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="NicknameLabel" type="Label" parent="Panel/VBoxContainer" unique_id=612959461]
+layout_mode = 2
+text = "Enter Your Nickname:"
+horizontal_alignment = 1
+
+[node name="NicknameInput" type="LineEdit" parent="Panel/VBoxContainer" unique_id=1859234216]
+custom_minimum_size = Vector2(300, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+placeholder_text = "Your Name (max 12 chars)"
+alignment = 1
+max_length = 12
+
+[node name="SpacerBottom" type="Control" parent="Panel/VBoxContainer" unique_id=1285064002]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="ConfirmButton" type="Button" parent="Panel/VBoxContainer" unique_id=869195316]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "CONFIRM"

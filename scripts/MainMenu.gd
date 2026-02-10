@@ -5,9 +5,13 @@ class_name MainMenu
 
 @export var start_button: Button
 @export var quit_button: Button
+@export var leaderboard_button: Button
 @export var title_label: Label
 
 var _title_tween: Tween
+var _leaderboard_ui: Control
+
+const LEADERBOARD_UI_SCENE = preload("res://scenes/LeaderboardUI.tscn")
 
 
 func _ready() -> void:
@@ -15,7 +19,20 @@ func _ready() -> void:
 		start_button.pressed.connect(_on_start_pressed)
 	if is_instance_valid(quit_button):
 		quit_button.pressed.connect(_on_quit_pressed)
+	if is_instance_valid(leaderboard_button):
+		leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	_start_title_pulse()
+	_setup_leaderboard_ui()
+
+
+func _setup_leaderboard_ui() -> void:
+	# Instantiate the leaderboard UI
+	_leaderboard_ui = LEADERBOARD_UI_SCENE.instantiate()
+	add_child(_leaderboard_ui)
+	
+	# Connect closed signal
+	if _leaderboard_ui.has_signal("closed"):
+		_leaderboard_ui.closed.connect(_on_leaderboard_closed)
 
 
 func _start_title_pulse() -> void:
@@ -35,6 +52,16 @@ func _start_title_pulse() -> void:
 
 func _on_start_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
+
+
+func _on_leaderboard_pressed() -> void:
+	if _leaderboard_ui:
+		_leaderboard_ui.show_leaderboard()
+
+
+func _on_leaderboard_closed() -> void:
+	# Leaderboard was closed, nothing special to do
+	pass
 
 
 func _on_quit_pressed() -> void:

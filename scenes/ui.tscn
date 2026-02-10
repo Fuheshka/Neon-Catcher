@@ -1,9 +1,11 @@
-[gd_scene format=3 uid="uid://q84vpce34yvx"]
+[gd_scene load_steps=7 format=3 uid="uid://q84vpce34yvx"]
 
 [ext_resource type="Script" uid="uid://b8ttkigeoqh1v" path="res://scripts/webmanager.gd" id="1_gdt2y"]
 [ext_resource type="Script" uid="uid://c6x6j5ax3cxws" path="res://scripts/HUD.gd" id="1_x4jx1"]
 [ext_resource type="FontFile" uid="uid://7gmdxpbn8lpj" path="res://assets/ofont.ru_Fixedsys.ttf" id="1_yev5y"]
 [ext_resource type="Script" uid="uid://cmku4yp7fwhvu" path="res://scripts/GameOverScreen.gd" id="2_yev5y"]
+[ext_resource type="PackedScene" uid="uid://bqwmhu6dmfxqt" path="res://scenes/RegistrationScreen.tscn" id="5_regis"]
+[ext_resource type="PackedScene" uid="uid://c8p7yqgr0qv1x" path="res://scenes/LeaderboardUI.tscn" id="6_leader"]
 
 [sub_resource type="Theme" id="Theme_gdt2y"]
 default_font = ExtResource("1_yev5y")
@@ -119,7 +121,7 @@ horizontal_alignment = 1
 layout_mode = 2
 text = "Start"
 
-[node name="GameOver" type="Control" parent="." unique_id=1437624638 node_paths=PackedStringArray("restart_button", "quit_button")]
+[node name="GameOver" type="Control" parent="." unique_id=1437624638 node_paths=PackedStringArray("restart_button", "quit_button", "leaderboard_button")]
 process_mode = 2
 visible = false
 layout_mode = 3
@@ -132,6 +134,7 @@ theme = SubResource("Theme_yev5y")
 script = ExtResource("2_yev5y")
 restart_button = NodePath("VBoxContainer/RestartButton")
 quit_button = NodePath("VBoxContainer/QuitButton")
+leaderboard_button = NodePath("VBoxContainer/LeaderboardButton")
 
 [node name="ColorRect" type="ColorRect" parent="GameOver" unique_id=1768850512]
 layout_mode = 0
@@ -159,6 +162,10 @@ horizontal_alignment = 1
 layout_mode = 2
 text = "Restart"
 
+[node name="LeaderboardButton" type="Button" parent="GameOver/VBoxContainer"]
+layout_mode = 2
+text = "View Leaderboard"
+
 [node name="QuitButton" type="Button" parent="GameOver/VBoxContainer" unique_id=3834191]
 layout_mode = 2
 text = "Quit"
@@ -172,3 +179,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(1, 1, 1, 0)
+
+[node name="RegistrationScreen" parent="." instance=ExtResource("5_regis")]
+process_mode = 2
+
+[node name="LeaderboardUI" parent="." instance=ExtResource("6_leader")]
+process_mode = 2

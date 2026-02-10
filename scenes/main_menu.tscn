@@ -10,7 +10,7 @@ default_font = ExtResource("2")
 default_font = ExtResource("2")
 default_font_size = 52
 
-[node name="MainMenu" type="Control" unique_id=1788953916 node_paths=PackedStringArray("start_button", "quit_button", "title_label")]
+[node name="MainMenu" type="Control" unique_id=1788953916 node_paths=PackedStringArray("start_button", "quit_button", "title_label", "leaderboard_button")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,6 +22,7 @@ script = ExtResource("1")
 start_button = NodePath("CenterContainer/VBoxContainer/StartButton")
 quit_button = NodePath("CenterContainer/VBoxContainer/QuitButton")
 title_label = NodePath("CenterContainer/VBoxContainer/TitleLabel")
+leaderboard_button = NodePath("CenterContainer/VBoxContainer/LeaderboardButton")
 
 [node name="Background" type="ColorRect" parent="." unique_id=295733714]
 layout_mode = 0
@@ -55,6 +56,11 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 text = "Start Game"
+
+[node name="LeaderboardButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+text = "Leaderboard"
 
 [node name="QuitButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1068384368]
 visible = false

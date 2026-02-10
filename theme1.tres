@@ -1,0 +1,7 @@
+[gd_resource type="Theme" format=3 uid="uid://c0jn3dnnk56d4"]
+
+[ext_resource type="FontFile" uid="uid://7gmdxpbn8lpj" path="res://assets/ofont.ru_Fixedsys.ttf" id="1_rgm6y"]
+
+[resource]
+default_font = ExtResource("1_rgm6y")
+default_font_size = 25
