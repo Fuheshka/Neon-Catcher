@@ -5,6 +5,7 @@ const PLAYER_PROFILE_FILE: String = "user://player_profile.json"
 
 @onready var nickname_input: LineEdit = $Panel/VBoxContainer/NicknameInput
 @onready var confirm_button: Button = $Panel/VBoxContainer/ConfirmButton
+@onready var tap_to_type_button: Button = $Panel/VBoxContainer/TapToTypeButton
 @onready var title_label: Label = $Panel/VBoxContainer/TitleLabel
 @onready var score_label: Label = $Panel/VBoxContainer/ScoreLabel
 @onready var status_label: Label = $Panel/VBoxContainer/StatusLabel
@@ -32,6 +33,14 @@ func _ready() -> void:
 	if confirm_button:
 		confirm_button.pressed.connect(_on_confirm_pressed)
 	
+	if tap_to_type_button:
+		tap_to_type_button.pressed.connect(_on_tap_to_type_pressed)
+		# Show "Tap to Type" button only on web builds
+		if OS.has_feature("web"):
+			tap_to_type_button.show()
+		else:
+			tap_to_type_button.hide()
+	
 	if nickname_input:
 		nickname_input.text_submitted.connect(_on_text_submitted)
 		nickname_input.max_length = 12
@@ -58,6 +67,10 @@ func show_screen(score: int) -> void:
 			if title_label:
 				title_label.text = "Enter Your Nickname"
 		
+		# Try to grab focus for native keyboard (may not work on mobile web)
+		nickname_input.grab_focus()
+		# Small delay to ensure UI is visible before focusing
+		await get_tree().create_timer(0.1).timeout
 		nickname_input.grab_focus()
 	
 	show()
@@ -71,6 +84,43 @@ func _on_text_submitted(_text: String) -> void:
 	_submit_score()
 
 
+## Handle "Tap to Type" button press (web-specific)
+func _on_tap_to_type_pressed() -> void:
+	if OS.has_feature("web"):
+		_prompt_nickname_web()
+	else:
+		# Fallback for non-web builds (shouldn't happen as button is hidden)
+		if nickname_input:
+			nickname_input.grab_focus()
+
+
+## Use JavaScript prompt for reliable mobile web input
+func _prompt_nickname_web() -> void:
+	if not OS.has_feature("web"):
+		return
+	
+	var default_value = saved_nickname if not saved_nickname.is_empty() else ""
+	
+	# Use JavaScriptBridge to call native browser prompt
+	var js_code = "prompt('Enter your nickname (max 12 characters):', '%s')" % default_value
+	var result = JavaScriptBridge.eval(js_code)
+	
+	if result != null and result != "":
+		# Limit to 12 characters and clean up
+		var nickname = str(result).strip_edges().substr(0, 12)
+		
+		if not nickname.is_empty():
+			if nickname_input:
+				nickname_input.text = nickname
+			print("✓ Nickname entered via web prompt: ", nickname)
+			# Auto-submit after web input
+			_submit_score()
+		else:
+			print("⚠ Empty nickname from web prompt")
+	else:
+		print("⚠ User cancelled web prompt")
+
+
 func _submit_score() -> void:
 	if not nickname_input:
 		return
@@ -79,7 +129,16 @@ func _submit_score() -> void:
 	
 	# Validate nickname
 	if nickname.is_empty():
-		nickname = "Anonymous"
+		# On web, prompt user instead of defaulting to Anonymous
+		if OS.has_feature("web"):
+			_show_status("Please enter a nickname!", Color.ORANGE)
+			_prompt_nickname_web()
+			return
+		else:
+			nickname = "Anonymous"
+	
+	# Ensure nickname is limited to 12 characters
+	nickname = nickname.substr(0, 12)
 	
 	# Save nickname for future use
 	_save_player_profile(nickname)
